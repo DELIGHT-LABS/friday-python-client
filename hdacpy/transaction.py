@@ -4,16 +4,15 @@ import json
 from typing import Any, Dict, List
 
 import ecdsa
-
-from hdacpy.type import SyncMode
-from hdacpy.wallet import privkey_to_pubkey, pubkey_to_address, privkey_to_address
-from hdacpy.exceptions import BadRequestException, EmptyMsgException
-
 import requests
+
+from hdacpy.exceptions import BadRequestException, EmptyMsgException
+from hdacpy.type import SyncMode
+from hdacpy.wallet import privkey_to_address, privkey_to_pubkey, pubkey_to_address
 
 
 class Transaction:
-    """A Hdac transaction"""
+    """A Hdac transaction."""
 
     def __init__(
         self,
@@ -43,6 +42,10 @@ class Transaction:
         resp = requests.post(url, json=json_param)
         return resp
 
+    def _put_json(self, url: str, json_param: dict) -> requests.Response:
+        resp = requests.put(url, json=json_param)
+        return resp
+
     def _get_account_info(self, address):
         url = "/".join([self._host, "auth/accounts", address])
         res = self._get(url, None)
@@ -59,10 +62,7 @@ class Transaction:
         pushable_tx = {
             "tx": {
                 "msg": self._msgs,
-                "fee": {
-                    "gas": str(self._gas_price),
-                    "amount": [],
-                },
+                "fee": {"gas": str(self._gas_price), "amount": [],},
                 "memo": self._memo,
                 "signatures": [
                     {
@@ -93,10 +93,7 @@ class Transaction:
         return {
             "chain_id": self._chain_id,
             "account_number": str(self._account_num),
-            "fee": {
-                "gas": str(self._gas_price),
-                "amount": [],
-            },
+            "fee": {"gas": str(self._gas_price), "amount": [],},
             "memo": self._memo,
             "sequence": str(self._sequence),
             "msgs": self._msgs,
@@ -107,9 +104,15 @@ class Transaction:
         resp = self._get(url, params={"address": address, "block": blockHash})
         return resp
 
-    def transfer(self, token_contract_address: str, recipient_address: str,
-                 amount: int, gas_price: int, fee: int,
-                 memo: str = "") -> None:
+    def transfer(
+        self,
+        token_contract_address: str,
+        recipient_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = "",
+    ) -> None:
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
 
@@ -126,7 +129,7 @@ class Transaction:
             "token_contract_address": token_contract_address,
             "sender_pubkey_or_name": sender_pubkey,
             "recipient_pubkey_or_name": recipient_address,
-            "amount": str(amount)
+            "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -139,8 +142,9 @@ class Transaction:
 
         self._msgs.extend(msgs)
 
-    def bond(self, token_contract_address: str,
-             amount: int, gas_price: int, fee: int, memo: str = ""):
+    def bond(
+        self, token_contract_address: str, amount: int, gas_price: int, fee: int, memo: str = ""
+    ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
@@ -156,7 +160,7 @@ class Transaction:
             "gas_price": str(gas_price),
             "fee": str(fee),
             "pubkey_or_name": pubkey,
-            "amount": str(amount)
+            "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -169,8 +173,9 @@ class Transaction:
 
         self._msgs.extend(msgs)
 
-    def unbond(self, token_contract_address: str,
-               amount: int, gas_price: int, fee: int, memo: str = ""):
+    def unbond(
+        self, token_contract_address: str, amount: int, gas_price: int, fee: int, memo: str = ""
+    ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
@@ -186,7 +191,7 @@ class Transaction:
             "gas_price": str(gas_price),
             "fee": str(fee),
             "pubkey_or_name": pubkey,
-            "amount": str(amount)
+            "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -213,7 +218,7 @@ class Transaction:
             "gas": str(gas_price),
             "memo": memo,
             "name": name,
-            "pubkey": pubkey
+            "pubkey": pubkey,
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -241,9 +246,93 @@ class Transaction:
             "memo": memo,
             "name": name,
             "old_pubkey": oldpubkey,
-            "new_pubkey": newpubkey
+            "new_pubkey": newpubkey,
         }
         resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+
+    def create_validator(
+        self,
+        validator_address: str,
+        cons_pub_key: str,
+        moniker: str,
+        identity: str,
+        website: str,
+        details: str,
+        gas_price: int,
+        memo: str = "",
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "contract/validators"])
+        params = {
+            "chain_id": self._chain_id,
+            "memo": memo,
+            "gas": str(gas_price),
+            "validator_address_or_nickname": validator_address,
+            "cons_pub_key": cons_pub_key,
+            "description": {
+                "moniker": moniker,
+                "identity": identity,
+                "website": website,
+                "details": details,
+            },
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+
+    def edit_validator(
+        self,
+        validator_address: str,
+        moniker: str,
+        identity: str,
+        website: str,
+        details: str,
+        gas_price: int,
+        memo: str = "",
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "contract/validators"])
+        params = {
+            "chain_id": self._chain_id,
+            "memo": memo,
+            "gas": str(gas_price),
+            "validator_address_or_nickname": validator_address,
+            "description": {
+                "moniker": moniker,
+                "identity": identity,
+                "website": website,
+                "details": details,
+            },
+        }
+        resp = self._put_json(url, json_param=params)
         if resp.status_code != 200:
             raise BadRequestException
 

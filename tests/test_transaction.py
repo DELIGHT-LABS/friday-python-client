@@ -149,3 +149,57 @@ def test_changekey():
     res = tx.send_tx()
     resp = res.json()
     assert res.status_code == 200 and resp['code'] == 0
+
+@pytest.mark.skip(reason="only works if RESTful server runs in local")
+def test_create_validator():
+    _tx_total_cost = 388000
+    fee = 1000
+    amount = _tx_total_cost - fee
+
+    tx = Transaction(
+        host="http://localhost:1317",
+        privkey="26d167d549a4b2b66f766b0d3f2bdbe1cd92708818c338ff453abde316a2bd59",
+        chain_id="friday-devtest",
+    )
+    tx.create_validator(
+        validator_address="friday1lgharzgds89lpshr7q8kcmd2esnxkfpwmfgk32",
+        cons_pub_key="fridayvalconspub16jrl8jvqqyukck2p89czk4zfdp4hvjn9f96kswr08yh5g3p0w9xnvd2xw4q5vumpfpmhqezwxpvrz6r02f44v569xqe82wt6x4fx2vj5veynq66z2f9xw3jgfqmxkv2ffegr26j9g35xj633dg68venefpey5mj0xeu5jun2xq6x2c2nwagx75rgxef5guj9gaa85cm5wax9542tx4xng5qlp58f4",
+        moniker="validator1",
+        identity="",
+        website="",
+        details="",
+        gas_price=2000000,
+        memo="",
+    )
+
+    res = tx.send_tx()
+    resp = res.json()
+
+    assert res.status_code == 200
+
+
+@pytest.mark.skip(reason="only works if RESTful server runs in local")
+def test_edit_validator():
+    _tx_total_cost = 388000
+    fee = 1000
+    amount = _tx_total_cost - fee
+
+    tx = Transaction(
+        host="http://localhost:1317",
+        privkey="26d167d549a4b2b66f766b0d3f2bdbe1cd92708818c338ff453abde316a2bd59",
+        chain_id="friday-devtest",
+    )
+    tx.edit_validator(
+        validator_address="friday1lgharzgds89lpshr7q8kcmd2esnxkfpwmfgk32",
+        moniker="validator2",
+        identity="",
+        website="hdac.io",
+        details="",
+        gas_price=2000000,
+        memo="",
+    )
+
+    res = tx.send_tx()
+    resp = res.json()
+
+    assert res.status_code == 200
