@@ -3,6 +3,12 @@ Changelog
 
 This log documents all public API breaking backwards incompatible changes.
 
+0.4.0
+----
+- REST API updated according to classify hdac specific endpoint and general contract
+- Update against request format changes
+
+
 0.3.2
 ----
 - REST API updated according to readable ID feature integration

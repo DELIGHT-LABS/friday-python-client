@@ -15,6 +15,7 @@ Forked from hukkinj1/cosmospy
 | [Hdac](https://github.com/hdac-io/friday) | `hdacpy` |
 |------|----------|
 | <= 0.4.0 | 0.3.2 |
+| 0.5.0 | 0.3.3 |
 
 ## Installing
 Installing from PyPI repository (https://pypi.org/project/hdacpy):
