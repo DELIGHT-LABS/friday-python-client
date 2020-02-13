@@ -100,7 +100,7 @@ class Transaction:
         }
 
     def balance(self, address: str, blockHash: str = None):
-        url = "/".join([self._host, "executionlayer/balance"])
+        url = "/".join([self._host, "hdac/balance"])
         resp = self._get(url, params={"address": address, "block": blockHash})
         return resp
 
@@ -120,11 +120,13 @@ class Transaction:
         self._memo = memo
         self._get_account_info(sender_address)
 
-        url = "/".join([self._host, "executionlayer/transfer"])
+        url = "/".join([self._host, "hdac/transfer"])
         params = {
-            "chain_id": self._chain_id,
-            "memo": memo,
-            "gas_price": str(gas_price),
+            "base_req": {
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+            },
             "fee": str(fee),
             "token_contract_address": token_contract_address,
             "sender_pubkey_or_name": sender_pubkey,
@@ -152,12 +154,14 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "executionlayer/bond"])
+        url = "/".join([self._host, "hdac/bond"])
         params = {
-            "chain_id": self._chain_id,
-            "memo": memo,
+            "base_req": {
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+            },
             "token_contract_address": token_contract_address,
-            "gas_price": str(gas_price),
             "fee": str(fee),
             "pubkey_or_name": pubkey,
             "amount": str(amount),
@@ -183,12 +187,14 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "executionlayer/unbond"])
+        url = "/".join([self._host, "hdac/unbond"])
         params = {
-            "chain_id": self._chain_id,
-            "memo": memo,
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+            },
             "token_contract_address": token_contract_address,
-            "gas_price": str(gas_price),
             "fee": str(fee),
             "pubkey_or_name": pubkey,
             "amount": str(amount),
@@ -212,13 +218,15 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "readablename/newname/secp256k1"])
+        url = "/".join([self._host, "nickname/new"])
         params = {
-            "chain_id": self._chain_id,
-            "gas": str(gas_price),
-            "memo": memo,
-            "name": name,
-            "pubkey": pubkey,
+            "base_req": {
+                "chain_id": self._chain_id,
+                "gas": str(gas_price),
+                "memo": memo,
+            },
+            "nickname": name,
+            "address": pubkey,
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -231,24 +239,26 @@ class Transaction:
 
         self._msgs.extend(msgs)
 
-    def changekey(self, name: str, newpubkey: str, gas_price: int, memo: str = ""):
+    def changekey(self, name: str, newaddr: str, gas_price: int, memo: str = ""):
         oldpubkey = privkey_to_pubkey(self._privkey)
-        address = pubkey_to_address(oldpubkey)
+        oldaddr = pubkey_to_address(oldpubkey)
 
         self._gas_price = gas_price
         self._memo = memo
-        self._get_account_info(address)
+        self._get_account_info(oldaddr)
 
-        url = "/".join([self._host, "readablename/change/secp256k1"])
+        url = "/".join([self._host, "nickname/change"])
         params = {
-            "chain_id": self._chain_id,
-            "gas": str(gas_price),
-            "memo": memo,
+            "base_req":{
+                "chain_id": self._chain_id,
+                "gas": str(gas_price),
+                "memo": memo,
+            },
             "name": name,
-            "old_pubkey": oldpubkey,
-            "new_pubkey": newpubkey,
+            "old_address": oldaddr,
+            "new_address": newaddr,
         }
-        resp = self._post_json(url, json_param=params)
+        resp = self._put_json(url, json_param=params)
         if resp.status_code != 200:
             raise BadRequestException
 
@@ -277,11 +287,13 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "contract/validators"])
+        url = "/".join([self._host, "hdac/validators"])
         params = {
-            "chain_id": self._chain_id,
-            "memo": memo,
-            "gas": str(gas_price),
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+            },
             "validator_address_or_nickname": validator_address,
             "cons_pub_key": cons_pub_key,
             "description": {
@@ -319,11 +331,13 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "contract/validators"])
+        url = "/".join([self._host, "hdac/validators"])
         params = {
-            "chain_id": self._chain_id,
-            "memo": memo,
-            "gas": str(gas_price),
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+            },
             "validator_address_or_nickname": validator_address,
             "description": {
                 "moniker": moniker,
