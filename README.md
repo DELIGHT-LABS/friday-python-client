@@ -1,24 +1,26 @@
+# hdacpy
+
 [![Build Status](https://travis-ci.org/psy2848048/hdacpy.svg?branch=master)](https://travis-ci.org/psy2848048/hdacpy)
 [![codecov](https://codecov.io/gh/psy2848048/hdacpy/branch/master/graph/badge.svg)](https://codecov.io/gh/psy2848048/hdacpy)
-# hdacpy
 
 Tools for Hdac wallet management and offline transaction signing  
 Forked from hukkinj1/cosmospy
 
 <!--- Don't edit the version line below manually. Let bump2version do it for you. -->
 > Version 0.4.0
-
 > Tools for Hdac wallet management and offline transaction signing
 
-# Version matching
+## Version matching
 
 | [Hdac](https://github.com/hdac-io/friday) | `hdacpy` |
 |------|----------|
-| <= 0.4.0 | 0.3.2 |
-| 0.5.0 | 0.3.3 |
+| <= 0.4.0 | 0.3.3 |
+| 0.5.0 | 0.4.0 |
 
 ## Installing
-Installing from PyPI repository (https://pypi.org/project/hdacpy):
+
+Installing from [Hdacpy PyPI repository](https://pypi.org/project/hdacpy):
+
 ```bash
 pip install hdacpy
 ```
@@ -27,15 +29,23 @@ pip install hdacpy
 
 ### Prerequisite
 
-Run node & rest-server in following step: (https://docs.hdac.io/installation/build)  
+Run node & rest-server in following step
+
+* [Installation](https://docs.hdac.io/first-step/installation)
+* [Node start](https://docs.hdac.io/first-step/deploy-your-own-friday-testnet)
+* [JSON RPC server start](https://docs.hdac.io/restful-api/block-tx)
+
 This library runs on RESTful API
 
 ### Generating a wallet
+
 ```python
 from hdacpy.wallet import generate_wallet
 wallet = generate_wallet()
 ```
+
 The value assigned to `wallet` will be a dictionary just like:
+
 ```python
 {
     'private_key': '367360433d797cabd35361abdb3f6d0b94d27d7222d3af22a49028b7f4beb85d',
@@ -45,6 +55,7 @@ The value assigned to `wallet` will be a dictionary just like:
  ```
 
 ### Signing transactions
+
 ```python
 from hdacpy.transaction import Transaction
 tx = Transaction(
@@ -60,22 +71,27 @@ tx.transfer(
     )
 res = tx.send_tx()
 ```
+
 `transfer()` executes `POST` to organize tx, and `send_tx()` signs & broadcast the tx.
 
 ## Contributing
+
 1. Fork/clone the repository.
 
 1. Install dependencies (you'll probably want to create a virtual environment, using your preferred method, first).
+
     ```bash
     pip install -r requirements.txt
     ```
 
 1. Install pre-commit hooks
+
     ```bash
     pre-commit install
     ```
 
 1. After making changes and having written tests, make sure tests pass:
+
     ```bash
     pytest
     ```
