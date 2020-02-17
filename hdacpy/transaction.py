@@ -126,11 +126,11 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "memo": memo,
                 "gas": str(gas_price),
+                "from": sender_address,
             },
             "fee": str(fee),
-            "token_contract_address": token_contract_address,
-            "sender_pubkey_or_name": sender_pubkey,
-            "recipient_pubkey_or_name": recipient_address,
+            "token_contract_address": sender_address,
+            "recipient_address_or_nickname": recipient_address,
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
@@ -160,10 +160,10 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "memo": memo,
                 "gas": str(gas_price),
+                "from": address,
             },
             "token_contract_address": token_contract_address,
             "fee": str(fee),
-            "pubkey_or_name": pubkey,
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
@@ -193,10 +193,10 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "memo": memo,
                 "gas": str(gas_price),
+                "from": address,
             },
             "token_contract_address": token_contract_address,
             "fee": str(fee),
-            "pubkey_or_name": pubkey,
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
@@ -224,9 +224,9 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "gas": str(gas_price),
                 "memo": memo,
+                "from": address,
             },
             "nickname": name,
-            "address": pubkey,
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -253,9 +253,9 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "gas": str(gas_price),
                 "memo": memo,
+                "from": oldaddr,
             },
             "name": name,
-            "old_address": oldaddr,
             "new_address": newaddr,
         }
         resp = self._put_json(url, json_param=params)
@@ -293,8 +293,8 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "memo": memo,
                 "gas": str(gas_price),
+                "from": validator_address,
             },
-            "validator_address_or_nickname": validator_address,
             "cons_pub_key": cons_pub_key,
             "description": {
                 "moniker": moniker,
@@ -337,8 +337,8 @@ class Transaction:
                 "chain_id": self._chain_id,
                 "memo": memo,
                 "gas": str(gas_price),
+                "from": validator_address,
             },
-            "validator_address_or_nickname": validator_address,
             "description": {
                 "moniker": moniker,
                 "identity": identity,

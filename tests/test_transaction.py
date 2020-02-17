@@ -49,7 +49,7 @@ def test_sign():
     assert actual_signature == expected_signature
 
 
-#@pytest.mark.skip(reason="only works if RESTful server runs in local")
+@pytest.mark.skip(reason="only works if RESTful server runs in local")
 def test_transfer():
     _tx_total_cost = 200000000
     fee = 100000000
