@@ -58,7 +58,7 @@ def test_transfer():
     tx = Transaction(
         host="http://localhost:1317",
         privkey="26d167d549a4b2b66f766b0d3f2bdbe1cd92708818c338ff453abde316a2bd59",
-        chain_id="friday-devnet",
+        chain_id="testnet",
     )
     tx.transfer(
         token_contract_address="friday15evpva2u57vv6l5czehyk69s0wnq9hrkqulwfz",
@@ -144,7 +144,7 @@ def test_changekey():
     )
     tx.changekey(
         name="bryan",
-        newpubkey="0356fab26b795d07fee213444c553f544713911253ca744bd38d9e6e2d648bc8c4",
+        newaddr="0356fab26b795d07fee213444c553f544713911253ca744bd38d9e6e2d648bc8c4",
         gas_price=2000000)
     res = tx.send_tx()
     resp = res.json()
