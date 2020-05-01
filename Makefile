@@ -1,5 +1,5 @@
 .PHONY: setup test
 
-setup: go.sum
+setup:
 	bash ./scripts/install_friday.sh
 	cd friday && make install

@@ -9,14 +9,17 @@ jobs:
       go: 1.13.x
       python: '3.8'
       cache:
-        directories:
+        - pip3
+        - directories:
           - $HOME/.cache/go-build
           - $HOME/gopath/pkg/mod
           - $HOME/.cargo
-          - CasperLabs
+          - friday/CasperLabs
+          - $HOME/.pyenv_cache
+    
       script:
         # Build
-        - python setup.py install
+        - python3 setup.py install
         # Tests
         - pytest --cov
       after_success:
@@ -30,6 +33,7 @@ addons:
       - curl
       - python3-pip
 before_install:
+  - pyenv install 3.6.3 && pyenv global 3.6.3
   - bash scripts/travis_ci_prerequisites.sh
   - export PATH="$PATH:$HOME/.cargo/bin"
   - export PATH="$PATH:$HOME/protoc/bin"
