@@ -1,12 +1,42 @@
-dist: xenial
-language: python
-python:
-  - '3.7'
-  - '3.8'
-script:
-  # Build
-  - python setup.py install
-  # Tests
-  - pytest --cov
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+jobs:
+  include:
+    - stage: unit test
+      os: linux
+      dist: xenial
+      language:
+        - go
+        - python
+      go: 1.13.x
+      python: '3.8'
+      cache:
+        - pip3
+        - directories:
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
+          - $HOME/.cargo
+          - $HOME/.pyenv_cache
+          - friday
+    
+      script:
+        # Build
+        - python3 setup.py install
+        # Tests
+        - pytest -s tests/* --cov
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+
+addons:
+  homebrew:
+    package: curl
+  apt:
+    packages:
+      - curl
+      - python3-pip
+before_install:
+  - pyenv install 3.6.3 && pyenv global 3.6.3
+  - bash scripts/travis_ci_prerequisites.sh
+  - export PATH="$PATH:$HOME/.cargo/bin"
+  - export PATH="$PATH:$HOME/protoc/bin"
+install:
+  - npm install -g assemblyscript@0.9.1
+  - make setup
