@@ -14,14 +14,14 @@ jobs:
           - $HOME/.cache/go-build
           - $HOME/gopath/pkg/mod
           - $HOME/.cargo
-          - friday/CasperLabs
           - $HOME/.pyenv_cache
+          - friday
     
       script:
         # Build
         - python3 setup.py install
         # Tests
-        - pytest --cov
+        - pytest -s tests/* --cov
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 
