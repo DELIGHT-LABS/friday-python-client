@@ -51,7 +51,8 @@ The value assigned to `wallet` will be a dictionary just like:
     'private_key': '367360433d797cabd35361abdb3f6d0b94d27d7222d3af22a49028b7f4beb85d',
     'public_key': '0320a9b30c5fbbba3ffc34a1732c69365bc2a7de143f970318f8f1a2a38018dc6a',
     'address': 'friday1jg8n39n2m93aavjnxl7snnvt4q6n50g9alxgkl',
-    'mnemonic': 'often day image remove film awful art satisfy stable honey provide cactus example flock vacuum adult cool install erase able pencil cancel retreat win'}
+    'mnemonic': 'often day image remove film awful art satisfy stable honey provide cactus example flock vacuum adult cool install erase able pencil cancel retreat win'
+}
  ```
 
 ### Signing transactions
@@ -73,27 +74,3 @@ res = tx.send_tx()
 ```
 
 `transfer()` executes `POST` to organize tx, and `send_tx()` signs & broadcast the tx.
-
-## Contributing
-
-1. Fork/clone the repository.
-
-1. Install dependencies (you'll probably want to create a virtual environment, using your preferred method, first).
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-1. Install pre-commit hooks
-
-    ```bash
-    pre-commit install
-    ```
-
-1. After making changes and having written tests, make sure tests pass:
-
-    ```bash
-    pytest
-    ```
-
-1. Commit, push, and make a PR.
