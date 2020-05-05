@@ -106,7 +106,10 @@ class Transaction:
         url = "/".join([self._host, "txs"])
         resp = self._post_json(url, json_param=tx)
         self._clear_msgs()
-        return resp
+
+        if resp.status_code != 200:
+            raise BadRequestException
+        return resp.json()
 
 
     ############################
@@ -119,13 +122,21 @@ class Transaction:
 
     def get_tx(self, tx_hash: str):
         url = "/".join([self._host, "txs", tx_hash])
-        return self._get(url, None)
+        resp = self._get(url, None)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
 
     # Looks like silly but possible in python
     def get_blocks(self, height: int = "latest"):
         url = "/".join([self._host, "blocks", height])
-        return self._get(url, None)
+        resp = self._get(url, None)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
 
     ############################
@@ -197,7 +208,11 @@ class Transaction:
             "data": data,
             "path": path
         }
-        return self._get(url, params)
+        resp = self._get(url, params)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
 
     ############################
@@ -558,28 +573,45 @@ class Transaction:
 
     def get_balance(self, address: str, blockHash: str = None):
         url = "/".join([self._host, "hdac/balance"])
-        resp = self._get(url, params={"address": address, "block": blockHash})
+        params = {"address": address}
+        #print(blockHash, type(blockHash))
+        #if blockHash != None and blockHash != "":
+        #    params["block"] = blockHash
+
+        resp = self._get(url, params=params)
         return resp
 
     def get_delegator(self, validator_address: str, delegator_address: str):
         url = "/".join([self._host, "hdac/delegator"])
         resp = self._get(url, params={"validator": validator_address, "delegator": delegator_address})
-        return resp
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
     def get_voter(self, account_address: str, contract_address: str):
         url = "/".join([self._host, "hdac/voter"])
         resp = self._get(url, params={"address": account_address, "contract": contract_address})
-        return resp
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
     def get_reward(self, account_address: str):
         url = "/".join([self._host, "hdac/reward"])
         resp = self._get(url, params={"address": account_address})
-        return resp
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
     def get_commission(self, account_address: str):
         url = "/".join([self._host, "hdac/commission"])
         resp = self._get(url, params={"address": account_address})
-        return resp
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
 
     ############################
@@ -631,6 +663,7 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
     def edit_validator(
         self,
@@ -674,6 +707,7 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
 
     ## Query
@@ -681,7 +715,10 @@ class Transaction:
     def get_validators(self, account_address: str):
         url = "/".join([self._host, "hdac/validators"])
         resp = self._get(url, params={"address": account_address})
-        return resp
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
 
 
     ###################################

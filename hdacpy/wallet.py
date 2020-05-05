@@ -27,8 +27,9 @@ def privkey_to_pubkey(privkey: str) -> str:
 
 def pubkey_to_address(pubkey: str) -> str:
     pubkey_bytes = bytes.fromhex(pubkey)
-    s = hashlib.new("sha256", pubkey_bytes).digest()
-    r = hashlib.new("ripemd160", s).digest()
+    blake = hashlib.blake2b(digest_size=32)
+    blake.update(pubkey_bytes)
+    r = blake.digest()
     return bech32.bech32_encode(PREFIX, bech32.convertbits(r, 8, 5))
 
 

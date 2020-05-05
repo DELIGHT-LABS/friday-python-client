@@ -11,7 +11,7 @@ def derive_child(
 ) -> bip32utils.BIP32Key:
     return (
         root.ChildKey(44 + bip32utils.BIP32_HARDEN)
-        .ChildKey(1227 + bip32utils.BIP32_HARDEN)
+        .ChildKey(1217 + bip32utils.BIP32_HARDEN)
         .ChildKey(account + bip32utils.BIP32_HARDEN)
         .ChildKey(0)
         .ChildKey(index)

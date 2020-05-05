@@ -56,12 +56,12 @@ def _tx_executor(cmd: str, passphrase, *args):
 ## Daemon control
 #################
 
-def run_casperlabsEE(ee_bin="../CasperLabs/execution-engine/target/release/casperlabs-engine-grpc-server",
+def run_casperlabsEE(ee_bin="../friday/CasperLabs/execution-engine/target/release/casperlabs-engine-grpc-server",
                      socket_path=".casperlabs/.casper-node.sock") -> subprocess.Popen:
     """
     ./casperlabs-engine-grpc-server $HOME/.casperlabs/.casper-node.sock -z
     """
-    cmd = "{} {} -z".format(ee_bin, os.path.join(os.environ['HOME'], socket_path))
+    cmd = "{} {}".format(ee_bin, os.path.join(os.environ['HOME'], socket_path))
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
 
@@ -74,11 +74,12 @@ def run_node() -> subprocess.Popen:
     return proc
 
 
-def run_rest() -> subprocess.Popen:
+def run_rest(client_home: str = '.test_clif') -> subprocess.Popen:
     """
     clif rest-server
     """
-    proc = subprocess.Popen(shlex.split("clif rest-server"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    client_home = os.path.join(os.environ["HOME"], client_home)
+    proc = subprocess.Popen(shlex.split("clif rest-server --home {}".format(client_home)), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
 
 
@@ -104,7 +105,7 @@ def init_chain(moniker: str, chain_id: str) -> subprocess.Popen:
 
 def copy_manifest():
     path = os.path.join(os.environ["HOME"], ".nodef/config")
-    cmd = "cp ../x/executionlayer/resources/manifest.toml {}".format(path)
+    cmd = "cp ../friday/x/executionlayer/resources/manifest.toml {}".format(path)
     _ = _process_executor(cmd, need_output=False)
 
 
@@ -279,19 +280,28 @@ def query_tx(tx_hash, client_home: str = ".test_clif"):
     res = _process_executor("clif query tx {} --home {}", tx_hash, client_home, need_output=True)
     return res
 
-
-def is_tx_ok(tx_hash):
-    res = query_tx(tx_hash)
+def tx_validation(res):
     is_success = res['logs'][0]['success']
     if is_success == False or "ERROR" in res['raw_log']:
         print(res['logs'])
     return res['logs'][0]['success'] and "ERROR" not in res['raw_log']
 
 
+def is_tx_ok(tx_hash):
+    res = query_tx(tx_hash)
+    return tx_validation(res)
+
+
 def get_bls_pubkey_remote(remote_address):
     child = pexpect.spawn('ssh -i ~/ci_nodes.pem {} "~/go/bin/nodef tendermint show-validator"'.format(remote_address))
     outs = child.read().decode('utf-8').strip()
     return outs
+
+
+def get_block(height: int, client_home: str = ".test_clif"):
+    client_home = os.path.join(os.environ["HOME"], client_home)
+    res = _process_executor("clif query block {} --home {}", height, client_home, need_output=True)
+    return res
 
 
 #################
