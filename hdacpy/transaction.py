@@ -105,6 +105,8 @@ class Transaction:
         tx = self._get_pushable_tx()
         url = "/".join([self._host, "txs"])
         resp = self._post_json(url, json_param=tx)
+        print(tx)
+        print(resp.text)
         self._clear_msgs()
 
         if resp.status_code != 200:
@@ -124,6 +126,7 @@ class Transaction:
         url = "/".join([self._host, "txs", tx_hash])
         resp = self._get(url, None)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -134,6 +137,7 @@ class Transaction:
         url = "/".join([self._host, "blocks", height])
         resp = self._get(url, None)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -255,6 +259,7 @@ class Transaction:
         value = resp.json().get("value")
         msgs = value.get("msg")
         if len(msgs) == 0:
+            print(resp.text)
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
@@ -287,6 +292,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -324,6 +330,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -363,6 +370,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -402,6 +410,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -482,6 +491,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -521,6 +531,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -533,7 +544,7 @@ class Transaction:
 
     def claim(
         self,
-        reward_or_commission: str,
+        reward_or_commission: bool,
         gas_price: int,
         fee: int,
         memo: str = ""
@@ -558,6 +569,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -579,12 +591,17 @@ class Transaction:
         #    params["block"] = blockHash
 
         resp = self._get(url, params=params)
-        return resp
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
 
     def get_delegator(self, validator_address: str, delegator_address: str):
         url = "/".join([self._host, "hdac/delegator"])
         resp = self._get(url, params={"validator": validator_address, "delegator": delegator_address})
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -593,6 +610,7 @@ class Transaction:
         url = "/".join([self._host, "hdac/voter"])
         resp = self._get(url, params={"address": account_address, "contract": contract_address})
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -601,6 +619,7 @@ class Transaction:
         url = "/".join([self._host, "hdac/reward"])
         resp = self._get(url, params={"address": account_address})
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -609,6 +628,7 @@ class Transaction:
         url = "/".join([self._host, "hdac/commission"])
         resp = self._get(url, params={"address": account_address})
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -655,6 +675,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -699,6 +720,7 @@ class Transaction:
         }
         resp = self._put_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -716,6 +738,7 @@ class Transaction:
         url = "/".join([self._host, "hdac/validators"])
         resp = self._get(url, params={"address": account_address})
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         return resp.json()
@@ -747,6 +770,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -777,6 +801,7 @@ class Transaction:
         }
         resp = self._put_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")

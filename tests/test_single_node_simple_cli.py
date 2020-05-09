@@ -94,6 +94,50 @@ class TestSingleNode():
             raise DeadDaemonException
 
 
+    def daemon_downcheck(self):
+        is_ee_alive = cmd.daemon_check(self.proc_ee)
+        is_friday_alive = cmd.daemon_check(self.proc_friday)
+        is_rest_alive = cmd.daemon_check(self.proc_rest)
+
+        if is_rest_alive:
+            for _ in range(10):
+                print("REST alive")
+                self.proc_rest.kill()
+                time.sleep(10)
+                is_rest_alive = cmd.daemon_check(self.proc_rest)
+                if not is_rest_alive:
+                    break
+
+            else:
+                raise DeadDaemonException
+
+
+        if is_friday_alive:
+            for _ in range(10):
+                print("Friday alive")
+                self.proc_friday.kill()
+                time.sleep(10)
+                is_friday_alive = cmd.daemon_check(self.proc_friday)
+                if not is_friday_alive:
+                    break
+
+            else:
+                raise DeadDaemonException
+
+
+        if is_ee_alive:
+            for _ in range(10):
+                print("EE alive")
+                self.proc_ee.kill()
+                time.sleep(10)
+                is_ee_alive = cmd.daemon_check(self.proc_ee)
+                if not is_ee_alive:
+                    break
+
+            else:
+                raise DeadDaemonException
+
+
     def setup_class(self):
         """
         Make genesis.json and keys
@@ -116,20 +160,16 @@ class TestSingleNode():
 
         print("Collect info and make transaction sender")
         self.tx_elsa = Tx(
+            chain_id=self.chain_id,
             host="http://localhost:1317",
             privkey=mnemonic_to_privkey(self.info_elsa["mnemonic"])
         )
-        print("elsa: {}".format(self.info_elsa["mnemonic"]))
-        print("elsa addr: {}".format(self.info_elsa["address"]))
-        print(mnemonic_to_address(self.info_elsa["mnemonic"]))
 
         self.tx_anna = Tx(
+            chain_id=self.chain_id,
             host="http://localhost:1317",
             privkey=mnemonic_to_privkey(self.info_anna["mnemonic"])
         )
-        print("anna: {}".format(self.info_anna["mnemonic"]))
-        print("anna addr: {}".format(self.info_anna["address"]))
-        print(mnemonic_to_address(self.info_anna["mnemonic"]))
 
         print("Apply general clif config")
         cmd.clif_configs(self.chain_id)
@@ -189,6 +229,7 @@ class TestSingleNode():
         self.proc_rest.terminate()
         self.proc_friday.terminate()
         self.proc_ee.terminate()
+        self.daemon_downcheck()
 
         print("Reset blocks")
         cmd.unsafe_reset_all()
@@ -224,11 +265,11 @@ class TestSingleNode():
         assert(is_ok == True)
 
         print("Balance checking after transfer..")
-        res = cmd.get_balance(self.wallet_anna)
-        assert(float(res) / self.multiplier == self.basic_coin_amount + float(self.transfer_amount))
+        res = self.tx_anna.get_balance(self.info_anna['address'])
+        assert(int(res["stringValue"]) / self.multiplier == self.basic_coin_amount + int(self.transfer_amount))
 
-        res = cmd.get_balance(self.wallet_elsa)
-        assert(float(res) / self.multiplier < self.basic_coin_amount - float(self.transfer_amount))
+        res = self.tx_elsa.get_balance(self.info_elsa['address'])
+        assert(int(res["stringValue"]) / self.multiplier <  self.basic_coin_amount - int(self.transfer_amount))
 
         print("======================Done test01_rest_transfer_to======================")
 
@@ -277,18 +318,26 @@ class TestSingleNode():
 
         print("Unbond and try to transfer")
         print("Unbond first")
-        tx_unbond_res = self.tx_anna.unbond(self.basic_coin_amount / 3, self.bonding_gas, self.bonding_fee)
+        tx_unbond_res = self.tx_anna.unbond(self.basic_coin_amount / 30, self.bonding_gas, self.bonding_fee)
         print("Tx sent. Waiting for validation")
 
         time.sleep(self.tx_block_time * 3 + 1)
 
         print("Check whether tx is ok or not")
+        print(tx_unbond_res)
         is_ok = cmd.tx_validation(tx_unbond_res)
         assert(is_ok == True)
 
+        print("Balance checking after unbonding")
+        res_after = self.tx_anna.get_balance(self.info_anna['address'])
+        # Reason: Just enough value to ensure that tx become invalid
+        print("Output: ", res_after)
+
         print("Try to transfer. Will be confirmed in this time")
-        tx_hash_after_unbond = cmd.transfer_to(self.wallet_password, self.info_elsa['address'], self.basic_coin_amount * 2 / 3,
-                                               self.transfer_fee, self.transfer_gas, self.wallet_anna)
+        tx_hash_after_unbond = self.tx_anna.transfer(
+                                self.info_elsa['address'], self.basic_coin_amount * 2 / 3,
+                                self.transfer_gas, self.transfer_fee
+                               )
         
         print("Tx sent. Waiting for validation")
         time.sleep(self.tx_block_time * 3 + 1)
@@ -298,11 +347,10 @@ class TestSingleNode():
         is_ok = cmd.tx_validation(tx_hash_after_unbond_res)
         assert(is_ok == True)
 
-        print("Balance checking after bonding")
+        print("Balance checking after transfer")
         res_after_after = self.tx_anna.get_balance(self.info_anna['address'])
-        # Reason: Just enough value to ensure that tx become invalid
         print("Output: ", res_after_after)
-        assert(float(res_after_after["stringValue"]) / self.multiplier < self.basic_coin_amount * 29 / 30)
+        assert(float(res_after_after["stringValue"]) / self.multiplier < self.basic_coin_amount / 30)
 
         print("======================Done test02_rest_bond_and_unbond======================")
 
@@ -328,9 +376,11 @@ class TestSingleNode():
             }
         ])
         wasm_bin = None
-        with open(wasm_path, 'r') as f:
+        with open(wasm_path, 'rb') as f:
             f_bin = f.read()
-            wasm_bin = f_bin.hex()
+
+            import base64
+            wasm_bin = base64.b64encode(f_bin).decode('utf-8')
 
         tx_store_contract = self.tx_anna.execute_contract("wasm", "", wasm_bin, param, self.bonding_gas, self.bonding_fee)
         print("Tx sent. Waiting for validation")
@@ -340,6 +390,10 @@ class TestSingleNode():
 
         is_ok = cmd.tx_validation(tx_check_store_contract_res)
         assert(is_ok == True)
+
+        print("Check contract query")
+        res = self.tx_anna.query_contract("address", "system", "")
+        print(res)
         print("======================End test03_rest_custom_contract_execution======================")
 
 
@@ -404,7 +458,7 @@ class TestSingleNode():
         is_ok = cmd.tx_validation(vote_uref_check_tx_res)
         assert(is_ok == True)
 
-        voter_res = self.tx_anna.get_voter(self.anonymous_contract_address_uref, self.info_anna['address'])
+        voter_res = self.tx_anna.get_voter(self.info_anna['address'], self.anonymous_contract_address_uref)
         print("Output: ", voter_res)
         assert(voter_res[0]["amount"] == self.vote_amount_bigsun)
 
@@ -419,7 +473,7 @@ class TestSingleNode():
         is_ok = cmd.tx_validation(vote_hash_check_tx_res)
         assert(is_ok == True)
 
-        voter_res = self.tx_anna.get_voter(self.anonymous_contract_address_hash, self.info_anna['address'])
+        voter_res = self.tx_anna.get_voter(self.info_anna['address'], self.anonymous_contract_address_hash)
         print("Output: ", voter_res)
         assert(voter_res[0]["amount"] == self.vote_amount_bigsun) 
 
@@ -452,46 +506,47 @@ class TestSingleNode():
 
         res = self.tx_anna.get_balance(self.info_anna['address'])
         init_balance = float(res["stringValue"])
-        assert(init_balance == self.basic_coin_amount) 
+        assert(init_balance / self.multiplier == self.basic_coin_amount) 
 
         commission_query_res = self.tx_anna.get_commission(self.info_anna['address'])
         print("Output: ", commission_query_res)
-        commission_value = commission_query_res
-        assert(float(commission_value) > 0) 
+        commission_value = float(commission_query_res["stringValue"])
+        assert(commission_value / self.multiplier > 0) 
 
         reward_query_res = self.tx_anna.get_reward(self.info_anna['address'])
         print("Output: ", reward_query_res)
-        reward_value = reward_query_res
-        assert(float(reward_value) > 0) 
+        reward_value = float(reward_query_res["stringValue"])
+        assert(reward_value / self.multiplier > 0) 
 
         print("Claim reward token")
-        claim_reward_tx_hash = self.tx_anna.claim("reward", self.vote_fee, self.vote_fee)
+        claim_reward_tx_hash = self.tx_anna.claim(True, self.vote_gas, self.vote_fee)
+        
         print("Tx sent. Waiting for claim reward")
+        time.sleep(self.tx_block_time * 3 + 1)
+
         claim_reward_check_tx_res = self.tx_anna.get_tx(claim_reward_tx_hash['txhash'])
         is_ok = cmd.tx_validation(claim_reward_check_tx_res)
         assert(is_ok == True)
 
-
-        time.sleep(self.tx_block_time * 3 + 1)
-
         res = self.tx_anna.get_balance(self.info_anna['address'])
         add_reward_balance = float(res["stringValue"])
         print("Output: ", res)
-        assert(float(init_balance) < float(add_reward_balance))
+        assert(float(init_balance) / self.multiplier < add_reward_balance)
 
         print("Claim commission token")
-        claim_commission_tx_hash = self.tx_anna.claim("commission", self.vote_fee, self.vote_fee)
+        claim_commission_tx_hash = self.tx_anna.claim(False, self.vote_gas, self.vote_fee)
+        
         print("Tx sent. Waiting for claim commission")
+        time.sleep(self.tx_block_time * 3 + 1)
+        
         claim_commission_check_tx_res = self.tx_anna.get_tx(claim_commission_tx_hash['txhash'])
         is_ok = cmd.tx_validation(claim_commission_check_tx_res)
         assert(is_ok == True)
 
-        time.sleep(self.tx_block_time * 3 + 1)
-
         res = self.tx_anna.get_balance(self.info_anna['address'])
         print("Output: ", res)
         add_reward_and_commission_balance = float(res["stringValue"])
-        assert(float(add_reward_balance) < float(add_reward_and_commission_balance))
+        assert(add_reward_balance < add_reward_and_commission_balance)
 
         print("======================Done test06_rest_simple_claim_reward_and_commission======================")
 
