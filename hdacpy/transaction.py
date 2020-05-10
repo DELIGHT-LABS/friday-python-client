@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import ecdsa
 import requests
 
-from hdacpy.exceptions import BadRequestException, EmptyMsgException
+from hdacpy.exceptions import BadRequestException, EmptyMsgException, NotEnoughParametersException
 from hdacpy.type import SyncMode
 from hdacpy.wallet import privkey_to_address, privkey_to_pubkey, pubkey_to_address
 
@@ -598,17 +598,43 @@ class Transaction:
         return resp.json()
 
     def get_delegator(self, validator_address: str, delegator_address: str):
+        if (validator_address == None or validator_address == "") and \
+            (delegator_address == None or delegator_address == ""):
+            raise NotEnoughParametersException
+
+        params = {}
+        if not (validator_address == None or validator_address == ""):
+            params['validator'] = validator_address
+
+        if not (delegator_address == None or delegator_address == ""):
+            params['delegator'] = delegator_address
+
         url = "/".join([self._host, "hdac/delegator"])
-        resp = self._get(url, params={"validator": validator_address, "delegator": delegator_address})
+        resp = self._get(url, params=params)
         if resp.status_code != 200:
             print(resp.text)
             raise BadRequestException
 
         return resp.json()
 
-    def get_voter(self, account_address: str, contract_address: str):
+    def get_voter(self,
+            account_address: str = None,
+            contract_address: str = None
+        ):
+
+        if (account_address == None or account_address == "") and \
+            (contract_address == None or contract_address == ""):
+            raise NotEnoughParametersException
+
+        params = {}
+        if not (account_address == None or account_address == ""):
+            params['address'] = account_address
+
+        if not (contract_address == None or contract_address == ""):
+            params['contract'] = contract_address
+
         url = "/".join([self._host, "hdac/voter"])
-        resp = self._get(url, params={"address": account_address, "contract": contract_address})
+        resp = self._get(url, params=params)
         if resp.status_code != 200:
             print(resp.text)
             raise BadRequestException

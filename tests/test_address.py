@@ -1,9 +1,9 @@
 import hdacpy.wallet as address
 
 test_vector = {
-    'private_key': '367360433d797cabd35361abdb3f6d0b94d27d7222d3af22a49028b7f4beb85d',
-    'public_key': '0320a9b30c5fbbba3ffc34a1732c69365bc2a7de143f970318f8f1a2a38018dc6a',
-    'address': 'friday1jg8n39n2m93aavjnxl7snnvt4q6n50g9alxgkl',
+    'private_key': '700f97c741663c679b440b4c65d61a3119c46c45627a86b53f98c63faa8bfb24',
+    'public_key': '0219b123d03301bcbf0537193b46e56874c87e594c595cdb93a0b4ddf171c54229',
+    'address': 'friday15hkuj0tfnkafnvazeemuhml4tzewkj3fnnxl2vxzw5ukk2wnzg5sdzknkr',
     'mnemonic': 'often day image remove film awful art satisfy stable honey provide cactus example flock vacuum adult cool install erase able pencil cancel retreat win'
     }
 
@@ -32,9 +32,9 @@ def test_generate_wallet(mocker):
     mock_urandom = mocker.patch("os.urandom")
     mock_urandom.return_value = b"\x1e\xd2\x7f9\xa7\x0em\xfd\xa0\xb4\xaa\xc4\x0b\x83\x0e%\xbf\xe6DG\x7f:a\xe6#qa\x1ch5D\xa9"  # noqa: E501
     expected_wallet = {
-        'private_key': 'bb8ac5bf9c342852fa5943d1366375c6f985d4601e596f23c5a49d095bfb2878',
-        'public_key': '03a7cc51198fc666901ec7b627926dad0c85d128ebe3251a132f009dcde1d64e03',
-        'address': 'friday1dep39rnnwztpt63jx0htxrkt3lgku2cd5p2l50',
+        'private_key': '0e94ebba9ade3ee6839ac29920ddb7e3ad074766caa825abe511c3021da2281b',
+        'public_key': '03e98766ca52975cd441927d768910af324276545be5082bea2f917ed0c8fad3a8',
+        'address': 'friday142n8vc2dj22s8d92e08fjegrfd2ryfp3r44l3962rmq3quyjy3xqn24amq',
         'mnemonic': 'burst negative solar evoke traffic yard lizard next series foster seminar enter wrist captain bulb trap giggle country sword season shoot boy bargain deal'
     }
     assert address.generate_wallet() == expected_wallet
