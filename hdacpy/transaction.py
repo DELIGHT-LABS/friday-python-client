@@ -805,6 +805,7 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
     def changekey(self, name: str, newaddr: str, gas_price: int, memo: str = ""):
         oldpubkey = privkey_to_pubkey(self._privkey)
@@ -836,3 +837,4 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
