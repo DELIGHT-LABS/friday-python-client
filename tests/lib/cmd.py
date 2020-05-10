@@ -56,7 +56,7 @@ def _tx_executor(cmd: str, passphrase, *args):
 ## Daemon control
 #################
 
-def run_casperlabsEE(ee_bin="../friday/CasperLabs/execution-engine/target/release/casperlabs-engine-grpc-server",
+def run_casperlabsEE(ee_bin="./friday/CasperLabs/execution-engine/target/release/casperlabs-engine-grpc-server",
                      socket_path=".casperlabs/.casper-node.sock") -> subprocess.Popen:
     """
     ./casperlabs-engine-grpc-server $HOME/.casperlabs/.casper-node.sock -z

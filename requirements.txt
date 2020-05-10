@@ -5,6 +5,7 @@ pytest-cov
 pytest-mock
 codecov
 requests
+pexpect
 
 # Requirements of the package
 ecdsa
