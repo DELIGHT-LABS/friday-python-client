@@ -70,7 +70,6 @@ tx.transfer(
         recipient_address="friday1z47ev5u5ujmc7kwv49tut7raesg55tjyk2wvhd",
         amount=amount, gas_price=2000000, fee=10000
     )
-res = tx.send_tx()
 ```
 
 `transfer()` executes `POST` to organize tx, and `send_tx()` signs & broadcast the tx.

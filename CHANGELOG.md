@@ -3,6 +3,12 @@ Changelog
 
 This log documents all public API breaking backwards incompatible changes.
 
+0.5.0
+----
+
+- Whole revised `transaction.py` and its tests
+- Make integration test with REST server
+
 0.4.1
 ----
 
