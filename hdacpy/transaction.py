@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import ecdsa
 import requests
 
-from hdacpy.exceptions import BadRequestException, EmptyMsgException
+from hdacpy.exceptions import BadRequestException, EmptyMsgException, NotEnoughParametersException
 from hdacpy.type import SyncMode
 from hdacpy.wallet import privkey_to_address, privkey_to_pubkey, pubkey_to_address
 
@@ -19,7 +19,6 @@ class Transaction:
         *,
         host: str,
         privkey: str,
-        gas_price: int = 0,
         memo: str = "",
         chain_id: str = "friday-devnet",
         sync_mode: SyncMode = "sync",
@@ -28,7 +27,7 @@ class Transaction:
         self._privkey = privkey
         self._account_num = 0
         self._sequence = 0
-        self._gas_price = gas_price
+        self._gas_price = 0
         self._memo = memo
         self._chain_id = chain_id
         self._sync_mode = sync_mode
@@ -99,20 +98,141 @@ class Transaction:
             "msgs": self._msgs,
         }
 
-    def balance(self, address: str, blockHash: str = None):
-        url = "/".join([self._host, "hdac/balance"])
-        resp = self._get(url, params={"address": address, "block": blockHash})
-        return resp
+    def _clear_msgs(self):
+        self._msgs = []
+
+    def _send_tx(self):
+        tx = self._get_pushable_tx()
+        url = "/".join([self._host, "txs"])
+        resp = self._post_json(url, json_param=tx)
+        print(tx)
+        print(resp.text)
+        self._clear_msgs()
+
+        if resp.status_code != 200:
+            raise BadRequestException
+        return resp.json()
+
+
+    ############################
+    ## Transaction
+    ############################
+
+    ##############
+    ## Query
+    ##############
+
+    def get_tx(self, tx_hash: str):
+        url = "/".join([self._host, "txs", tx_hash])
+        resp = self._get(url, None)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+
+    # Looks like silly but possible in python
+    def get_blocks(self, height: int = "latest"):
+        url = "/".join([self._host, "blocks", height])
+        resp = self._get(url, None)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+
+    ############################
+    ## Contract
+    ############################
+
+    ## Tx
+
+    def execute_contract(
+        self,
+        execution_type: str,
+        token_contract_address_or_key_name: str,
+        base64_encoded_binary: str,
+        args: str,
+        gas_price: int,
+        fee: int,
+        memo: str = "",
+    ):
+        sender_pubkey = privkey_to_pubkey(self._privkey)
+        sender_address = pubkey_to_address(sender_pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(sender_address)
+
+        if execution_type == "wasm":
+            token_contract_address_or_key_name = ""
+        else: # hash | uref | name
+            base64_encoded_binary = ""
+
+        url = "/".join([self._host, "contract"])
+        params = {
+            "base_req": {
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+                "from": sender_address,
+            },
+            "type": execution_type,
+            "token_contract_address_or_key_name": token_contract_address_or_key_name,
+            "base64_encoded_binary": base64_encoded_binary,
+            "args": args,
+            "fee": str(fee),
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+
+    ## Query
+
+    def query_contract(
+        self,
+        data_type: str,
+        data: str,
+        path: str
+    ):
+        url = "/".join([self._host, "contract"])
+        params = {
+            "data_type": data_type,
+            "data": data,
+            "path": path
+        }
+        resp = self._get(url, params)
+        if resp.status_code != 200:
+            raise BadRequestException
+
+        return resp.json()
+
+
+    ############################
+    ## Token
+    ############################
+
+    ## Tx
 
     def transfer(
         self,
-        token_contract_address: str,
         recipient_address: str,
         amount: int,
         gas_price: int,
         fee: int,
         memo: str = "",
-    ) -> None:
+    ):
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
 
@@ -129,7 +249,6 @@ class Transaction:
                 "from": sender_address,
             },
             "fee": str(fee),
-            "token_contract_address": sender_address,
             "recipient_address_or_nickname": recipient_address,
             "amount": str(amount),
         }
@@ -140,12 +259,18 @@ class Transaction:
         value = resp.json().get("value")
         msgs = value.get("msg")
         if len(msgs) == 0:
+            print(resp.text)
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
     def bond(
-        self, token_contract_address: str, amount: int, gas_price: int, fee: int, memo: str = ""
+        self,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
@@ -162,12 +287,12 @@ class Transaction:
                 "gas": str(gas_price),
                 "from": address,
             },
-            "token_contract_address": token_contract_address,
             "fee": str(fee),
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -176,9 +301,14 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
     def unbond(
-        self, token_contract_address: str, amount: int, gas_price: int, fee: int, memo: str = ""
+        self,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
@@ -195,12 +325,12 @@ class Transaction:
                 "gas": str(gas_price),
                 "from": address,
             },
-            "token_contract_address": token_contract_address,
             "fee": str(fee),
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -209,8 +339,16 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
-    def set_nick(self, name: str, gas_price: int, memo: str = ""):
+    def delegate(
+        self,
+        validator_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
@@ -218,15 +356,99 @@ class Transaction:
         self._memo = memo
         self._get_account_info(address)
 
-        url = "/".join([self._host, "nickname/new"])
+        url = "/".join([self._host, "hdac/delegate"])
         params = {
-            "base_req": {
+            "base_req":{
                 "chain_id": self._chain_id,
-                "gas": str(gas_price),
                 "memo": memo,
+                "gas": str(gas_price),
                 "from": address,
             },
-            "nickname": name,
+            "validator_address": validator_address,
+            "amount": str(amount),
+            "fee": str(fee),
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+    def undelegate(
+        self,
+        validator_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "hdac/undelegate"])
+        params = {
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+                "from": address,
+            },
+            "validator_address": validator_address,
+            "amount": str(amount),
+            "fee": str(fee),
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+    def redelegate(
+        self,
+        src_validator_address: str,
+        dest_validator_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "hdac/redelegate"])
+        params = {
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+                "from": address,
+            },
+            "src_validator_address": src_validator_address,
+            "dest_validator_address": dest_validator_address,
+            "amount": str(amount),
+            "fee": str(fee),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -238,28 +460,38 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
-    def changekey(self, name: str, newaddr: str, gas_price: int, memo: str = ""):
-        oldpubkey = privkey_to_pubkey(self._privkey)
-        oldaddr = pubkey_to_address(oldpubkey)
+    def vote(
+        self,
+        target_contract_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
 
         self._gas_price = gas_price
         self._memo = memo
-        self._get_account_info(oldaddr)
+        self._get_account_info(address)
 
-        url = "/".join([self._host, "nickname/change"])
+        url = "/".join([self._host, "hdac/vote"])
         params = {
             "base_req":{
                 "chain_id": self._chain_id,
-                "gas": str(gas_price),
                 "memo": memo,
-                "from": oldaddr,
+                "gas": str(gas_price),
+                "from": address,
             },
-            "name": name,
-            "new_address": newaddr,
+            "target_contract_address": target_contract_address,
+            "amount": str(amount),
+            "fee": str(fee),
         }
-        resp = self._put_json(url, json_param=params)
+        resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -268,16 +500,180 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
+    def unvote(
+        self,
+        target_contract_address: str,
+        amount: int,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "hdac/unvote"])
+        params = {
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+                "from": address,
+            },
+            "target_contract_address": target_contract_address,
+            "amount": str(amount),
+            "fee": str(fee),
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+    def claim(
+        self,
+        reward_or_commission: bool,
+        gas_price: int,
+        fee: int,
+        memo: str = ""
+    ):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "hdac/claim"])
+        params = {
+            "base_req":{
+                "chain_id": self._chain_id,
+                "memo": memo,
+                "gas": str(gas_price),
+                "from": address,
+            },
+            "reward_or_commission": reward_or_commission,
+            "fee": str(fee),
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+
+    ## Query
+
+    def get_balance(self, address: str, blockHash: str = None):
+        url = "/".join([self._host, "hdac/balance"])
+        params = {"address": address}
+        #print(blockHash, type(blockHash))
+        #if blockHash != None and blockHash != "":
+        #    params["block"] = blockHash
+
+        resp = self._get(url, params=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+    def get_delegator(self, validator_address: str, delegator_address: str):
+        if (validator_address == None or validator_address == "") and \
+            (delegator_address == None or delegator_address == ""):
+            raise NotEnoughParametersException
+
+        params = {}
+        if not (validator_address == None or validator_address == ""):
+            params['validator'] = validator_address
+
+        if not (delegator_address == None or delegator_address == ""):
+            params['delegator'] = delegator_address
+
+        url = "/".join([self._host, "hdac/delegator"])
+        resp = self._get(url, params=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+    def get_voter(self,
+            account_address: str = None,
+            contract_address: str = None
+        ):
+
+        if (account_address == None or account_address == "") and \
+            (contract_address == None or contract_address == ""):
+            raise NotEnoughParametersException
+
+        params = {}
+        if not (account_address == None or account_address == ""):
+            params['address'] = account_address
+
+        if not (contract_address == None or contract_address == ""):
+            params['contract'] = contract_address
+
+        url = "/".join([self._host, "hdac/voter"])
+        resp = self._get(url, params=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+    def get_reward(self, account_address: str):
+        url = "/".join([self._host, "hdac/reward"])
+        resp = self._get(url, params={"address": account_address})
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+    def get_commission(self, account_address: str):
+        url = "/".join([self._host, "hdac/commission"])
+        resp = self._get(url, params={"address": account_address})
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+
+    ############################
+    ## Validator
+    ############################
+
+    ## Tx
     def create_validator(
         self,
         validator_address: str,
         cons_pub_key: str,
         moniker: str,
-        identity: str,
-        website: str,
-        details: str,
         gas_price: int,
+        identity: str = "",
+        website: str = "",
+        details: str = "",
         memo: str = "",
     ):
         pubkey = privkey_to_pubkey(self._privkey)
@@ -305,6 +701,7 @@ class Transaction:
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -313,15 +710,16 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
     def edit_validator(
         self,
         validator_address: str,
         moniker: str,
-        identity: str,
-        website: str,
-        details: str,
         gas_price: int,
+        identity: str = "",
+        website: str = "",
+        details: str = "",
         memo: str = "",
     ):
         pubkey = privkey_to_pubkey(self._privkey)
@@ -348,6 +746,7 @@ class Transaction:
         }
         resp = self._put_json(url, json_param=params)
         if resp.status_code != 200:
+            print(resp.text)
             raise BadRequestException
 
         value = resp.json().get("value")
@@ -356,9 +755,86 @@ class Transaction:
             raise EmptyMsgException
 
         self._msgs.extend(msgs)
+        return self._send_tx()
 
-    def send_tx(self):
-        tx = self._get_pushable_tx()
-        url = "/".join([self._host, "txs"])
-        resp = self._post_json(url, json_param=tx)
-        return resp
+
+    ## Query
+
+    def get_validators(self, account_address: str):
+        url = "/".join([self._host, "hdac/validators"])
+        resp = self._get(url, params={"address": account_address})
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
+
+    ###################################
+    ## Nickname
+    ##   - Will be blocked for a while
+    ###################################
+
+    ## Tx
+    def set_nick(self, name: str, gas_price: int, memo: str = ""):
+        pubkey = privkey_to_pubkey(self._privkey)
+        address = pubkey_to_address(pubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(address)
+
+        url = "/".join([self._host, "nickname/new"])
+        params = {
+            "base_req": {
+                "chain_id": self._chain_id,
+                "gas": str(gas_price),
+                "memo": memo,
+                "from": address,
+            },
+            "nickname": name,
+        }
+        resp = self._post_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()
+
+    def changekey(self, name: str, newaddr: str, gas_price: int, memo: str = ""):
+        oldpubkey = privkey_to_pubkey(self._privkey)
+        oldaddr = pubkey_to_address(oldpubkey)
+
+        self._gas_price = gas_price
+        self._memo = memo
+        self._get_account_info(oldaddr)
+
+        url = "/".join([self._host, "nickname/change"])
+        params = {
+            "base_req":{
+                "chain_id": self._chain_id,
+                "gas": str(gas_price),
+                "memo": memo,
+                "from": oldaddr,
+            },
+            "name": name,
+            "new_address": newaddr,
+        }
+        resp = self._put_json(url, json_param=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        value = resp.json().get("value")
+        msgs = value.get("msg")
+        if len(msgs) == 0:
+            raise EmptyMsgException
+
+        self._msgs.extend(msgs)
+        return self._send_tx()

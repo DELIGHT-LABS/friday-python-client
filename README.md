@@ -7,7 +7,7 @@ Tools for Hdac wallet management and offline transaction signing
 Forked from hukkinj1/cosmospy
 
 <!--- Don't edit the version line below manually. Let bump2version do it for you. -->
-> Version 0.4.1
+> Version 0.5.0
 > Tools for Hdac wallet management and offline transaction signing
 
 ## Version matching
@@ -70,7 +70,6 @@ tx.transfer(
         recipient_address="friday1z47ev5u5ujmc7kwv49tut7raesg55tjyk2wvhd",
         amount=amount, gas_price=2000000, fee=10000
     )
-res = tx.send_tx()
 ```
 
 `transfer()` executes `POST` to organize tx, and `send_tx()` signs & broadcast the tx.
