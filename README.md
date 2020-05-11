@@ -14,6 +14,7 @@ Forked from hukkinj1/cosmospy
 
 | [Hdac](https://github.com/hdac-io/friday) | `hdacpy` |
 |------|----------|
+| <= 0.9.0 | 0.5.0 |
 | <= 0.4.0 | 0.3.3 |
 | 0.5.0 | 0.4.0 |
 

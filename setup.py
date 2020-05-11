@@ -21,8 +21,8 @@ setup(
     packages=["hdacpy"],
     package_data={"hadcpy": ["py.typed"]},
     zip_safe=False,  # For mypy to be able to find the installed package
-    long_description=read("README.md"),
-    long_description_content_type="text/markdown",
+    #long_description=read("README.md"),
+    #long_description_content_type="text/markdown",
     install_requires=[
         "ecdsa>=0.14.0,<0.15.0",
         "bech32>=1.1.0,<2.0.0",
