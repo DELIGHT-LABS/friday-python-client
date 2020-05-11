@@ -371,16 +371,17 @@ class TestSingleNode():
         print("Try to run bond function by wasm path")
         wasm_path = os.path.join(os.environ['HOME'], ".nodef", "contracts", "bonding.wasm")
         param = json.dumps([
-            # {
-            #       "name": "method_name",
-            #       "value": {
-            #         "string_value": "bond"
-            #       }
-            # },
             {
-                "name": "amount",
-                "value": {
-                    "long_value":10
+                "name":"amount",
+                "value":{
+                    "clType":{
+                        "simpleType":"U512"
+                    },
+                    "value":{
+                        "u512":{
+                        "value":"10000000000000000"
+                        }
+                    }
                 }
             }
         ])
