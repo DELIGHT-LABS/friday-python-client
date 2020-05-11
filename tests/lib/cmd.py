@@ -63,7 +63,6 @@ def run_casperlabsEE(ee_bin="./friday/CasperLabs/execution-engine/target/release
     """
     ./casperlabs-engine-grpc-server $HOME/.casperlabs/.casper-node.sock -z
     """
-    _ = _process_executor("pwd")
     cmd = "{} -t 8 {} -z".format(ee_bin, os.path.join(os.environ['HOME'], socket_path))
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
