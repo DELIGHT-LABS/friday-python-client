@@ -7,7 +7,7 @@ Tools for Hdac wallet management and offline transaction signing
 Forked from hukkinj1/cosmospy
 
 <!--- Don't edit the version line below manually. Let bump2version do it for you. -->
-> Version 0.4.1
+> Version 0.5.0
 > Tools for Hdac wallet management and offline transaction signing
 
 ## Version matching

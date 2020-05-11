@@ -12,7 +12,7 @@ def read(file_name: str) -> str:
 
 setup(
     name="hdacpy",
-    version="0.4.1",  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
+    version="0.5.0",  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
     author="psy2848048",
     author_email="psy2848048@users.noreply.github.com",
     description="Tools for Hdac wallet management and offline transaction signing",
