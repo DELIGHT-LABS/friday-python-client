@@ -71,13 +71,19 @@ class TestSingleNode():
         is_ee_alive = cmd.daemon_check(self.proc_ee)
         is_friday_alive = cmd.daemon_check(self.proc_friday)
         is_rest_alive = cmd.daemon_check(self.proc_rest)
-        for idx in range(10):
-            res = cmd.get_block(1)
-            if "error" not in res:
-                break
+        for idx in range(5):
+            try:
+                res = cmd.get_block(1)
+                if "error" not in res:
+                    break
 
-            print(res)
-            print("Trial {}...".format(idx))
+                print(res)
+                print("Trial {}...".format(idx))
+
+            except:
+                print("Trial {}...".format(idx))
+                print("Fail to get block. Sleep a little bit..")
+                time.sleep(5)
 
         else:
             raise DaemonNotProducingBlock
@@ -211,15 +217,17 @@ class TestSingleNode():
 
 
     def setup_method(self):
-        print("Running CasperLabs EE..")
+        print("Waiting for running CasperLabs EE..")
         self.proc_ee = cmd.run_casperlabsEE()
-        print("Running friday node..")
+        time.sleep(3)
+        
+        print("Waiting for running friday node..")
         self.proc_friday = cmd.run_node()
-        print("Running rest server..")
-        self.proc_rest = cmd.run_rest()
-
         # Waiting for nodef process is up and ready for receiving tx...
         time.sleep(10)
+
+        print("Running rest server..")
+        self.proc_rest = cmd.run_rest()
 
         self.daemon_healthcheck()
         print("Runup done. start testing")

@@ -12,14 +12,16 @@ import pexpect
 
 from .errors import DeadDaemonException, FinishedWithError, InvalidContractRunType
 
-def _process_executor(cmd: str, *args, need_output=False):
+def _process_executor(cmd: str, *args, need_output=False, need_print=False):
     print(cmd.format(*args))
     child = pexpect.spawn(cmd.format(*args))    
     outs = child.read().decode('utf-8')
 
+    if need_print == True:
+        print(outs)
+
     if need_output == True:
         try:
-            print(outs)
             res = json.loads(outs)
         except Exception as e:
             print(e)
@@ -61,7 +63,8 @@ def run_casperlabsEE(ee_bin="./friday/CasperLabs/execution-engine/target/release
     """
     ./casperlabs-engine-grpc-server $HOME/.casperlabs/.casper-node.sock -z
     """
-    cmd = "{} {}".format(ee_bin, os.path.join(os.environ['HOME'], socket_path))
+    _ = _process_executor("pwd")
+    cmd = "{} -t 8 {}".format(ee_bin, os.path.join(os.environ['HOME'], socket_path))
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
 
@@ -105,8 +108,8 @@ def init_chain(moniker: str, chain_id: str) -> subprocess.Popen:
 
 def copy_manifest():
     path = os.path.join(os.environ["HOME"], ".nodef/config")
-    cmd = "cp ../friday/x/executionlayer/resources/manifest.toml {}".format(path)
-    _ = _process_executor(cmd, need_output=False)
+    cmd = "cp ./friday/x/executionlayer/resources/manifest.toml {}".format(path)
+    _ = _process_executor(cmd, need_print=True)
 
 
 def create_wallet(wallet_alias: str, passphrase: str, client_home: str = '.test_clif'):
@@ -230,7 +233,7 @@ def clif_configs(chain_id: str, client_home: str = '.test_clif'):
 def load_chainspec():
     path = os.path.join(os.environ['HOME'], ".nodef/config/manifest.toml")
     cmd = "nodef load-chainspec {}"
-    _ = _process_executor(cmd, path)
+    _ = _process_executor(cmd, path, need_print=True)
     
 
 def gentx(wallet_alias: str, passphrase: str, client_home: str = '.test_clif'):
