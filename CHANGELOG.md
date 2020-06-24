@@ -3,6 +3,11 @@ Changelog
 
 This log documents all public API breaking backwards incompatible changes.
 
+0.5.1
+----
+
+- Replaced as hard-coded Tx for transfer
+
 0.5.0
 ----
 
