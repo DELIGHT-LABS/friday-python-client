@@ -240,28 +240,32 @@ class Transaction:
         self._memo = memo
         self._get_account_info(sender_address)
 
-        url = "/".join([self._host, "hdac/transfer"])
         params = {
-            "base_req": {
-                "chain_id": self._chain_id,
-                "memo": memo,
-                "gas": str(gas_price),
-                "from": sender_address,
-            },
-            "fee": str(fee),
-            "recipient_address_or_nickname": recipient_address,
-            "amount": str(amount),
+            "type": "friday/StdTx",
+            "value": {
+                "msg": [
+                    {
+                        "type": "executionengine/Transfer",
+                        "value": {
+                            "contract_address": "system:transfer",
+                            "from_address": sender_address,
+                            "to_address": recipient_address,
+                            "amount": str(int(amount * (10 ** 18))),
+                            "fee": str(int(fee* (10 ** 18)))
+                        }
+                    }
+                ],
+                "fee": {
+                    "amount": [],
+                    "gas": "100000000"
+                },
+                "signatures": "",
+                "memo": memo
+            }
         }
-        resp = self._post_json(url, json_param=params)
-        if resp.status_code != 200:
-            raise BadRequestException
 
-        value = resp.json().get("value")
-        msgs = value.get("msg")
-        if len(msgs) == 0:
-            print(resp.text)
-            raise EmptyMsgException
-
+        msgs = params.get("value").get("msg")
+        
         self._msgs.extend(msgs)
         return self._send_tx()
 
