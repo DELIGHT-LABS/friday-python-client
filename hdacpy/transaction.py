@@ -114,6 +114,9 @@ class Transaction:
             raise BadRequestException
         return resp.json()
 
+    def batchSendTx(self):
+        self._send_tx()
+
 
     ############################
     ## Transaction
@@ -229,6 +232,7 @@ class Transaction:
         amount: int,
         fare: int,
         memo: str = "",
+        batch_mode: bool = False,
     ):
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
@@ -263,7 +267,12 @@ class Transaction:
         msgs = params.get("value").get("msg")
         
         self._msgs.extend(msgs)
-        return self._send_tx()
+
+        if batch_mode == False:
+            # 1 tx 1 msg
+            return self._send_tx()
+        # else:
+            # just extend msgs and send via batchSendTx later
 
     def bond(
         self,
