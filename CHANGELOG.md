@@ -3,6 +3,12 @@ Changelog
 
 This log documents all public API breaking backwards incompatible changes.
 
+0.5.2
+----
+
+- Replaced to fare system from gas & fee
+- Added batch msgs into 1 tx mode for transfer
+
 0.5.1
 ----
 
