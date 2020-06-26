@@ -21,16 +21,17 @@ class Transaction:
         privkey: str,
         memo: str = "",
         chain_id: str = "friday-devnet",
+        gas_price: int = 100000000,
         sync_mode: SyncMode = "sync",
     ) -> None:
         self._host = host
         self._privkey = privkey
         self._account_num = 0
         self._sequence = 0
-        self._gas_price = 0
         self._memo = memo
         self._chain_id = chain_id
         self._sync_mode = sync_mode
+        self._gas_price = gas_price
         self._msgs: List[dict] = []
 
     def _get(self, url: str, params: dict) -> requests.Response:
@@ -155,14 +156,12 @@ class Transaction:
         token_contract_address_or_key_name: str,
         base64_encoded_binary: str,
         args: str,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = "",
     ):
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(sender_address)
 
@@ -176,14 +175,13 @@ class Transaction:
             "base_req": {
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": sender_address,
             },
             "type": execution_type,
             "token_contract_address_or_key_name": token_contract_address_or_key_name,
             "base64_encoded_binary": base64_encoded_binary,
             "args": args,
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -229,14 +227,12 @@ class Transaction:
         self,
         recipient_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = "",
     ):
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(sender_address)
 
@@ -251,7 +247,7 @@ class Transaction:
                             "from_address": sender_address,
                             "to_address": recipient_address,
                             "amount": str(int(amount * (10 ** 18))),
-                            "fee": str(int(fee* (10 ** 18)))
+                            "fee": str(int(fare * (10 ** 18)))
                         }
                     }
                 ],
@@ -272,14 +268,12 @@ class Transaction:
     def bond(
         self,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -288,10 +282,9 @@ class Transaction:
             "base_req": {
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
-            "fee": str(fee),
+            "fee": str(fare),
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
@@ -310,14 +303,12 @@ class Transaction:
     def unbond(
         self,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -326,10 +317,9 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
-            "fee": str(fee),
+            "fee": str(fare),
             "amount": str(amount),
         }
         resp = self._post_json(url, json_param=params)
@@ -349,14 +339,12 @@ class Transaction:
         self,
         validator_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -365,12 +353,11 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "validator_address": validator_address,
             "amount": str(amount),
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -389,14 +376,12 @@ class Transaction:
         self,
         validator_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -405,12 +390,11 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "validator_address": validator_address,
             "amount": str(amount),
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -430,14 +414,12 @@ class Transaction:
         src_validator_address: str,
         dest_validator_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -446,13 +428,12 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "src_validator_address": src_validator_address,
             "dest_validator_address": dest_validator_address,
             "amount": str(amount),
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -470,14 +451,12 @@ class Transaction:
         self,
         target_contract_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -486,12 +465,11 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "target_contract_address": target_contract_address,
             "amount": str(amount),
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -510,14 +488,12 @@ class Transaction:
         self,
         target_contract_address: str,
         amount: int,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -526,12 +502,11 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "target_contract_address": target_contract_address,
             "amount": str(amount),
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -549,14 +524,12 @@ class Transaction:
     def claim(
         self,
         reward_or_commission: bool,
-        gas_price: int,
-        fee: int,
+        fare: int,
         memo: str = ""
     ):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -565,11 +538,10 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": address,
             },
             "reward_or_commission": reward_or_commission,
-            "fee": str(fee),
+            "fee": str(fare),
         }
         resp = self._post_json(url, json_param=params)
         if resp.status_code != 200:
@@ -674,7 +646,6 @@ class Transaction:
         validator_address: str,
         cons_pub_key: str,
         moniker: str,
-        gas_price: int,
         identity: str = "",
         website: str = "",
         details: str = "",
@@ -683,7 +654,6 @@ class Transaction:
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -692,7 +662,6 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": validator_address,
             },
             "cons_pub_key": cons_pub_key,
@@ -720,7 +689,6 @@ class Transaction:
         self,
         validator_address: str,
         moniker: str,
-        gas_price: int,
         identity: str = "",
         website: str = "",
         details: str = "",
@@ -729,7 +697,6 @@ class Transaction:
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -738,7 +705,6 @@ class Transaction:
             "base_req":{
                 "chain_id": self._chain_id,
                 "memo": memo,
-                "gas": str(gas_price),
                 "from": validator_address,
             },
             "description": {
@@ -780,11 +746,10 @@ class Transaction:
     ###################################
 
     ## Tx
-    def set_nick(self, name: str, gas_price: int, memo: str = ""):
+    def set_nick(self, name: str, memo: str = ""):
         pubkey = privkey_to_pubkey(self._privkey)
         address = pubkey_to_address(pubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(address)
 
@@ -792,7 +757,6 @@ class Transaction:
         params = {
             "base_req": {
                 "chain_id": self._chain_id,
-                "gas": str(gas_price),
                 "memo": memo,
                 "from": address,
             },
@@ -811,11 +775,10 @@ class Transaction:
         self._msgs.extend(msgs)
         return self._send_tx()
 
-    def changekey(self, name: str, newaddr: str, gas_price: int, memo: str = ""):
+    def changekey(self, name: str, newaddr: str, memo: str = ""):
         oldpubkey = privkey_to_pubkey(self._privkey)
         oldaddr = pubkey_to_address(oldpubkey)
 
-        self._gas_price = gas_price
         self._memo = memo
         self._get_account_info(oldaddr)
 
@@ -823,7 +786,6 @@ class Transaction:
         params = {
             "base_req":{
                 "chain_id": self._chain_id,
-                "gas": str(gas_price),
                 "memo": memo,
                 "from": oldaddr,
             },
