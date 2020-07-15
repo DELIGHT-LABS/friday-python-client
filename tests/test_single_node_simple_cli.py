@@ -17,6 +17,7 @@ class TestSingleNode():
 
     chain_id = "testchain"
     moniker = "testnode"
+    consensus_module = "friday"
 
     system_contract = "0000000000000000000000000000000000000000000000000000000000000000"
     anonymous_contract_address_hash = "fridaycontracthash1dl45lfet0wrsduxfeegwmskmmr8yhlpk6lk4qdpyhpjsffkymstq6ajv0a"
@@ -36,67 +37,41 @@ class TestSingleNode():
     info_olaf = None
     info_hans = None
 
-    basic_coin = "1000000000000000000000000000"
-    basic_stake = "1000000000000000000"
+    basic_coin = "500000000000000000000000000"
+    basic_stake = "10000000000000000000"
 
     multiplier = 10 ** 18
 
     basic_coin_amount = int(int(basic_coin) / multiplier)
 
-    basic_bond = "1"
-    bonding_fee = "0.1"
-    bonding_gas = 50000000
+    basic_bond = 1
+    bonding_fee = 0.01
 
-    delegate_amount = "1"
-    delegate_amount_bigsun = "1000000000000000000"
-    delegate_fee = "0.1"
-    delegate_gas = 50000000
+    delegate_amount = 1
+    delegate_amount_bigsun = 1000000000000000000
+    delegate_fee = 0.05
 
-    vote_amount = "0.1"
-    vote_amount_bigsun = "100000000000000000"
-    vote_fee = "0.1"
-    vote_gas = 50000000
+    vote_amount = 1
+    vote_amount_bigsun = 1000000000000000000
+    vote_fee = 0.03
 
-    transfer_amount = "1"
-    transfer_fee = "0.1"
-    transfer_gas = 30000000
+    transfer_amount = 1
+    transfer_fee = 0.01
 
-    short_gas = 10000000
-    small_fee = "0.00001"
+    tx_block_time = 2
 
-    tx_block_time = 6
+    small_fee = 0.00001
 
 
     def daemon_healthcheck(self):
         is_ee_alive = cmd.daemon_check(self.proc_ee)
         is_friday_alive = cmd.daemon_check(self.proc_friday)
-        is_rest_alive = cmd.daemon_check(self.proc_rest)
-        for idx in range(5):
-            try:
-                res = cmd.get_block(1)
-                if "error" not in res:
-                    break
-
-                print(res)
-                print("Trial {}...".format(idx))
-
-            except:
-                print("Trial {}...".format(idx))
-                print("Fail to get block. Sleep a little bit..")
-                time.sleep(5)
-
-        else:
-            raise DaemonNotProducingBlock
-
-        if not (is_ee_alive and is_friday_alive and is_rest_alive and "error" not in res):
+        if not (is_ee_alive and is_friday_alive):
             if not is_ee_alive:
                 print("EE dead")
 
             if not is_friday_alive:
                 print("Friday dead")
-
-            if not is_rest_alive:
-                print("REST server dead")
 
             raise DeadDaemonException
 
@@ -104,21 +79,6 @@ class TestSingleNode():
     def daemon_downcheck(self):
         is_ee_alive = cmd.daemon_check(self.proc_ee)
         is_friday_alive = cmd.daemon_check(self.proc_friday)
-        is_rest_alive = cmd.daemon_check(self.proc_rest)
-
-        if is_rest_alive:
-            for _ in range(10):
-                print("REST alive")
-                self.proc_rest.kill()
-                time.sleep(10)
-                is_rest_alive = cmd.daemon_check(self.proc_rest)
-                if not is_rest_alive:
-                    break
-
-            else:
-                raise DeadDaemonException
-
-
         if is_friday_alive:
             for _ in range(10):
                 print("Friday alive")
@@ -155,7 +115,9 @@ class TestSingleNode():
         cmd.whole_cleanup()
 
         print("Init chain")
-        cmd.init_chain(self.moniker, self.chain_id)
+        cmd.init_chain(self.moniker, self.consensus_module, self.chain_id)
+        cmd.unsafe_reset_all()
+
         print("Copy manifest file")
         cmd.copy_manifest()
 
@@ -196,6 +158,9 @@ class TestSingleNode():
         print("Load chainspec")
         cmd.load_chainspec()
 
+        print("Apply general clif config")
+        cmd.clif_configs(self.chain_id)
+
         print("Gentx")
         cmd.gentx(self.wallet_elsa, self.wallet_password)
         print("Collect gentxs")
@@ -217,17 +182,17 @@ class TestSingleNode():
 
 
     def setup_method(self):
-        print("Waiting for running CasperLabs EE..")
+        print("Running CasperLabs EE..")
         self.proc_ee = cmd.run_casperlabsEE()
-        time.sleep(3)
-        
-        print("Waiting for running friday node..")
+        print("Running friday node..")
         self.proc_friday = cmd.run_node()
-        # Waiting for nodef process is up and ready for receiving tx...
-        time.sleep(10)
-
         print("Running rest server..")
         self.proc_rest = cmd.run_rest()
+
+        # Waiting for nodef process is up and ready for receiving tx...
+        time.sleep(10)
+        cmd._process_executor("ps", "-al", need_output=True, need_json_res=False)
+
 
         self.daemon_healthcheck()
         print("Runup done. start testing")
@@ -262,8 +227,7 @@ class TestSingleNode():
         print("======================Start test01_rest_transfer_to======================")
 
         print("Transfer token from elsa to anna")
-        res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount,
-                        self.transfer_gas, self.transfer_fee)
+        res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount, self.transfer_fee)
         print(res)
         
         print("Tx sent. Waiting for validation")
@@ -287,7 +251,7 @@ class TestSingleNode():
         print("======================Start test02_rest_bond_and_unbond======================")
 
         print("Bonding token")
-        bond_tx_res = self.tx_anna.bond(self.basic_coin_amount / 3, self.bonding_gas, self.bonding_fee)
+        bond_tx_res = self.tx_anna.bond(self.basic_coin_amount / 3, self.bonding_fee)
         print("Tx sent. Waiting for validation")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -306,7 +270,7 @@ class TestSingleNode():
         print("Try to send more money than bonding. Invalid tx expected")
         tx_hash_after_bond = self.tx_anna.transfer(
                                 self.info_elsa['address'], self.basic_coin_amount * 2 / 3,
-                                self.transfer_gas, self.transfer_fee
+                                self.transfer_fee
                              )
         
         print("Tx sent. Waiting for validation")
@@ -322,12 +286,12 @@ class TestSingleNode():
         res_after = self.tx_anna.get_balance(self.info_anna['address'])
         # Reason: Just enough value to ensure that tx become invalid
         print("Output: ", res_after)
-        assert(2 * 0.99 * self.basic_coin_amount / 3 < float(res_after["stringValue"]) / self.multiplier < 2 * self.basic_coin_amount / 3)
+        assert(self.basic_coin_amount / 3 < float(res_after["stringValue"]))
 
 
         print("Unbond and try to transfer")
         print("Unbond first")
-        tx_unbond_res = self.tx_anna.unbond(self.basic_coin_amount / 30, self.bonding_gas, self.bonding_fee)
+        tx_unbond_res = self.tx_anna.unbond(self.basic_coin_amount / 30, self.bonding_fee)
         print("Tx sent. Waiting for validation")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -345,7 +309,7 @@ class TestSingleNode():
         print("Try to transfer. Will be confirmed in this time")
         tx_hash_after_unbond = self.tx_anna.transfer(
                                 self.info_elsa['address'], self.basic_coin_amount * 2 / 3,
-                                self.transfer_gas, self.transfer_fee
+                                self.transfer_fee
                                )
         
         print("Tx sent. Waiting for validation")
@@ -359,7 +323,7 @@ class TestSingleNode():
         print("Balance checking after transfer")
         res_after_after = self.tx_anna.get_balance(self.info_anna['address'])
         print("Output: ", res_after_after)
-        assert(float(res_after_after["stringValue"]) / self.multiplier < self.basic_coin_amount / 30)
+        assert(float(res_after_after["stringValue"]) / self.multiplier < self.basic_coin_amount)
 
         print("======================Done test02_rest_bond_and_unbond======================")
 
@@ -392,7 +356,7 @@ class TestSingleNode():
             import base64
             wasm_bin = base64.b64encode(f_bin).decode('utf-8')
 
-        tx_store_contract = self.tx_anna.execute_contract("wasm", "", wasm_bin, param, self.bonding_gas, self.bonding_fee)
+        tx_store_contract = self.tx_anna.execute_contract("wasm", "", wasm_bin, param, self.bonding_fee)
         print("Tx sent. Waiting for validation")
         time.sleep(self.tx_block_time * 3 + 1)
         tx_check_store_contract_res = self.tx_anna.get_tx(tx_store_contract['txhash'])
@@ -411,7 +375,7 @@ class TestSingleNode():
         print("======================Start test04_rest_simple_delegate_redelegate_and_undelegate======================")
 
         print("Delegate token")
-        delegate_tx_res = self.tx_anna.delegate(self.info_elsa['address'], self.delegate_amount, self.delegate_gas, self.delegate_fee)
+        delegate_tx_res = self.tx_anna.delegate(self.info_elsa['address'], self.delegate_amount, self.delegate_fee)
         print("Tx sent. Waiting for delegate")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -426,7 +390,7 @@ class TestSingleNode():
         assert(delegator_res[0]["amount"] == self.delegate_amount_bigsun) 
 
         print("Redelegate token")
-        redelegate_tx_res = self.tx_anna.redelegate(self.info_elsa['address'], self.info_olaf['address'], self.delegate_amount, self.delegate_gas, self.delegate_fee)
+        redelegate_tx_res = self.tx_anna.redelegate(self.info_elsa['address'], self.info_olaf['address'], self.delegate_amount, self.delegate_fee)
         print("Tx sent. Waiting for redelegate")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -441,7 +405,7 @@ class TestSingleNode():
         assert(delegator_res[0]["amount"] == self.delegate_amount_bigsun) 
 
         print("Undelegate token")
-        undelegate_tx_res = self.tx_anna.undelegate(self.info_olaf['address'], self.delegate_amount, self.delegate_gas, self.delegate_fee)
+        undelegate_tx_res = self.tx_anna.undelegate(self.info_olaf['address'], self.delegate_amount, self.delegate_fee)
         print("Tx sent. Waiting for undelegate")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -458,7 +422,7 @@ class TestSingleNode():
         print("======================Start test05_rest_simple_vote_and_unvote======================")
 
         print("Vote token: uref")
-        vote_uref_tx_res = self.tx_anna.vote(self.anonymous_contract_address_uref, self.vote_amount, self.vote_gas, self.vote_fee)
+        vote_uref_tx_res = self.tx_anna.vote(self.anonymous_contract_address_uref, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for vote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -473,7 +437,7 @@ class TestSingleNode():
         assert(voter_res[0]["amount"] == self.vote_amount_bigsun)
 
         print("Vote token: hash")
-        vote_hash_tx_res = self.tx_anna.vote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_gas, self.vote_fee)
+        vote_hash_tx_res = self.tx_anna.vote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for vote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -488,7 +452,7 @@ class TestSingleNode():
         assert(voter_res[0]["amount"] == self.vote_amount_bigsun) 
 
         print("Unvote token")
-        unvote_hash_tx_res = self.tx_anna.unvote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_gas, self.vote_fee)
+        unvote_hash_tx_res = self.tx_anna.unvote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for unvote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -500,7 +464,7 @@ class TestSingleNode():
 
         print("Check malfunction: wrong address")
         try:
-            _ = self.tx_anna.vote(self.system_contract, self.vote_amount, self.vote_gas, self.vote_fee)
+            _ = self.tx_anna.vote(self.system_contract, self.vote_amount, self.vote_fee)
             raise Exception("Executed. Test fails")
 
         except:
@@ -529,7 +493,7 @@ class TestSingleNode():
         assert(reward_value / self.multiplier > 0) 
 
         print("Claim reward token")
-        claim_reward_tx_hash = self.tx_anna.claim(True, self.vote_gas, self.vote_fee)
+        claim_reward_tx_hash = self.tx_anna.claim(True, self.vote_fee)
         
         print("Tx sent. Waiting for claim reward")
         time.sleep(self.tx_block_time * 3 + 1)
@@ -544,7 +508,7 @@ class TestSingleNode():
         assert(float(init_balance) / self.multiplier < add_reward_balance)
 
         print("Claim commission token")
-        claim_commission_tx_hash = self.tx_anna.claim(False, self.vote_gas, self.vote_fee)
+        claim_commission_tx_hash = self.tx_anna.claim(False, self.vote_fee)
         
         print("Tx sent. Waiting for claim commission")
         time.sleep(self.tx_block_time * 3 + 1)
@@ -565,8 +529,7 @@ class TestSingleNode():
         print("======================Start test09_rest_transfer_should_fail_due_to_fee_shortage======================")
 
         print("Try to transfer token from elsa to anna. This tx should fail due to small fee in execution engine")
-        tx_res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount,
-                        self.short_gas, self.small_fee)
+        tx_res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount, self.small_fee)
         
         print("Tx sent. Waiting for validation")
         time.sleep(self.tx_block_time * 3 + 1)
