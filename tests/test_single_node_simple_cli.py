@@ -4,6 +4,7 @@ import os
 
 from hdacpy.transaction import Transaction as Tx
 from hdacpy.wallet import mnemonic_to_privkey, mnemonic_to_address
+from hdacpy.exceptions import BadRequestException
 
 import pytest
 
@@ -48,11 +49,11 @@ class TestSingleNode():
     bonding_fee = 0.01
 
     delegate_amount = 1
-    delegate_amount_bigsun = 1000000000000000000
+    delegate_amount_bigsun = "1000000000000000000"
     delegate_fee = 0.05
 
     vote_amount = 1
-    vote_amount_bigsun = 1000000000000000000
+    vote_amount_bigsun = "1000000000000000000"
     vote_fee = 0.03
 
     transfer_amount = 1
@@ -278,9 +279,14 @@ class TestSingleNode():
         
         print("Check whether tx is ok or not")
         tx_hash_after_bond_hash = tx_hash_after_bond['txhash']
-        tx_hash_after_bond_res = self.tx_anna.get_tx(tx_hash_after_bond_hash)
-        is_ok = cmd.tx_validation(tx_hash_after_bond_res)
-        assert(is_ok == False)
+        is_pass = False
+        try:
+            _ = self.tx_anna.get_tx(tx_hash_after_bond_hash)
+        except BadRequestException:
+            is_pass = True
+
+        if is_pass == False:
+            pytest.fail("This tx should fail")
 
         print("Balance checking after bonding")
         res_after = self.tx_anna.get_balance(self.info_anna['address'])
@@ -288,9 +294,7 @@ class TestSingleNode():
         print("Output: ", res_after)
         assert(self.basic_coin_amount / 3 < float(res_after["stringValue"]))
 
-
-        print("Unbond and try to transfer")
-        print("Unbond first")
+        print("Unbond")
         tx_unbond_res = self.tx_anna.unbond(self.basic_coin_amount / 30, self.bonding_fee)
         print("Tx sent. Waiting for validation")
 
@@ -300,30 +304,6 @@ class TestSingleNode():
         print(tx_unbond_res)
         is_ok = cmd.tx_validation(tx_unbond_res)
         assert(is_ok == True)
-
-        print("Balance checking after unbonding")
-        res_after = self.tx_anna.get_balance(self.info_anna['address'])
-        # Reason: Just enough value to ensure that tx become invalid
-        print("Output: ", res_after)
-
-        print("Try to transfer. Will be confirmed in this time")
-        tx_hash_after_unbond = self.tx_anna.transfer(
-                                self.info_elsa['address'], self.basic_coin_amount * 2 / 3,
-                                self.transfer_fee
-                               )
-        
-        print("Tx sent. Waiting for validation")
-        time.sleep(self.tx_block_time * 3 + 1)
-
-        print("Check whether tx is ok or not")
-        tx_hash_after_unbond_res = self.tx_anna.get_tx(tx_hash_after_unbond['txhash'])
-        is_ok = cmd.tx_validation(tx_hash_after_unbond_res)
-        assert(is_ok == True)
-
-        print("Balance checking after transfer")
-        res_after_after = self.tx_anna.get_balance(self.info_anna['address'])
-        print("Output: ", res_after_after)
-        assert(float(res_after_after["stringValue"]) / self.multiplier < self.basic_coin_amount)
 
         print("======================Done test02_rest_bond_and_unbond======================")
 
@@ -374,6 +354,18 @@ class TestSingleNode():
     def test04_rest_simple_delegate_redelegate_and_undelegate(self):
         print("======================Start test04_rest_simple_delegate_redelegate_and_undelegate======================")
 
+        print("Bonding token")
+        bond_tx_res = self.tx_anna.bond(self.delegate_amount, self.delegate_fee)
+        print("Tx sent. Waiting for validation")
+
+        time.sleep(self.tx_block_time * 3 + 1)
+
+        print("Check whether tx is ok or not")
+        bond_tx_hash = bond_tx_res['txhash']
+        bond_tx_check_res = self.tx_anna.get_tx(bond_tx_hash)
+        is_ok = cmd.tx_validation(bond_tx_check_res)
+        assert(is_ok == True)
+
         print("Delegate token")
         delegate_tx_res = self.tx_anna.delegate(self.info_elsa['address'], self.delegate_amount, self.delegate_fee)
         print("Tx sent. Waiting for delegate")
@@ -421,8 +413,24 @@ class TestSingleNode():
     def test05_rest_simple_vote_and_unvote(self):
         print("======================Start test05_rest_simple_vote_and_unvote======================")
 
+        res = cmd.query_contract("address", "system", "")
+        contracthash = res['account']['namedKeys'][0]['key']['hash']['hash']
+        contracturef = res['account']['namedKeys'][2]['key']['uref']['uref']
+
+        print("Bonding token")
+        bond_tx_res = self.tx_anna.bond(self.vote_amount, self.vote_fee)
+        print("Tx sent. Waiting for validation")
+
+        time.sleep(self.tx_block_time * 3 + 1)
+
+        print("Check whether tx is ok or not")
+        bond_tx_hash = bond_tx_res['txhash']
+        bond_tx_check_res = self.tx_anna.get_tx(bond_tx_hash)
+        is_ok = cmd.tx_validation(bond_tx_check_res)
+        assert(is_ok == True)
+
         print("Vote token: uref")
-        vote_uref_tx_res = self.tx_anna.vote(self.anonymous_contract_address_uref, self.vote_amount, self.vote_fee)
+        vote_uref_tx_res = self.tx_anna.vote(contracturef, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for vote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -432,12 +440,12 @@ class TestSingleNode():
         is_ok = cmd.tx_validation(vote_uref_check_tx_res)
         assert(is_ok == True)
 
-        voter_res = self.tx_anna.get_voter(self.info_anna['address'], self.anonymous_contract_address_uref)
+        voter_res = self.tx_anna.get_voter(self.info_anna['address'], None)
         print("Output: ", voter_res)
-        assert(voter_res[0]["amount"] == self.vote_amount_bigsun)
+        assert(voter_res["stringValue"] == self.vote_amount_bigsun)
 
         print("Vote token: hash")
-        vote_hash_tx_res = self.tx_anna.vote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_fee)
+        vote_hash_tx_res = self.tx_anna.vote(contracthash, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for vote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -447,12 +455,12 @@ class TestSingleNode():
         is_ok = cmd.tx_validation(vote_hash_check_tx_res)
         assert(is_ok == True)
 
-        voter_res = self.tx_anna.get_voter(self.info_anna['address'], self.anonymous_contract_address_hash)
+        voter_res = self.tx_anna.get_voter(None, contracthash)
         print("Output: ", voter_res)
-        assert(voter_res[0]["amount"] == self.vote_amount_bigsun) 
+        assert(voter_res["stringValue"] == self.vote_amount_bigsun) 
 
         print("Unvote token")
-        unvote_hash_tx_res = self.tx_anna.unvote(self.anonymous_contract_address_hash, self.vote_amount, self.vote_fee)
+        unvote_hash_tx_res = self.tx_anna.unvote(contracthash, self.vote_amount, self.vote_fee)
         print("Tx sent. Waiting for unvote")
 
         time.sleep(self.tx_block_time * 3 + 1)
@@ -535,8 +543,13 @@ class TestSingleNode():
         time.sleep(self.tx_block_time * 3 + 1)
 
         print("Check whether tx is ok or not")
-        check_tx_res = self.tx_anna.get_tx(tx_res['txhash'])
-        is_ok = cmd.tx_validation(check_tx_res)
-        assert(is_ok == False)
+        is_pass = False
+        try:
+            _ = self.tx_anna.get_tx(tx_res['txhash'])
+        except BadRequestException:
+            is_pass = True
+        
+        if is_pass == False:
+            pytest.fail("This tx should fail")
 
         print("======================Done test09_rest_transfer_should_fail_due_to_fee_shortage======================")
