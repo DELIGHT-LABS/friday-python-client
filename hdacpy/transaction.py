@@ -615,10 +615,10 @@ class Transaction:
         if not (account_address == None or account_address == ""):
             params['address'] = account_address
 
-        if not (contract_address == None or contract_address == ""):
-            params['contract'] = contract_address
+        elif not (contract_address == None or contract_address == ""):
+            params['dapp'] = contract_address
 
-        url = "/".join([self._host, "hdac/voter"])
+        url = "/".join([self._host, "hdac/vote"])
         resp = self._get(url, params=params)
         if resp.status_code != 200:
             print(resp.text)
