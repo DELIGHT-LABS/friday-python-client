@@ -25,6 +25,8 @@ setup(
         "ecdsa>=0.14.0,<0.15.0",
         "bech32>=1.1.0,<2.0.0",
         "typing-extensions>=3.7.4,<4.0.0; python_version<'3.8'",
+        "mnemonic==0.19",
+        "bip32utils",
     ],
     python_requires=">=3.6",
     keywords="hdac blockchain cryptocurrency python sdk",
