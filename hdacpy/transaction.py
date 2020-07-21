@@ -582,6 +582,20 @@ class Transaction:
 
         return resp.json()
 
+    def get_stake(self, address: str, blockHash: str = None):
+        url = "/".join([self._host, "hdac/stake"])
+        params = {"address": address}
+        #print(blockHash, type(blockHash))
+        #if blockHash != None and blockHash != "":
+        #    params["block"] = blockHash
+
+        resp = self._get(url, params=params)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise BadRequestException
+
+        return resp.json()
+
     def get_delegator(self, validator_address: str, delegator_address: str):
         if (validator_address == None or validator_address == "") and \
             (delegator_address == None or delegator_address == ""):
