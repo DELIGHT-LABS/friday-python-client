@@ -267,6 +267,10 @@ class TestSingleNode():
         res_before = self.tx_anna.get_balance(self.info_anna['address'])
         print("Output: ", res_before)
         assert(2 * 0.99 * self.basic_coin_amount / 3 < float(res_before["stringValue"]) / self.multiplier < 2 * self.basic_coin_amount / 3)
+        print("Staking value checking after bonding")
+        stake_res_before = self.tx_anna.get_stake(self.info_anna['address'])
+        print("Output: ", stake_res_before)
+        assert(round(self.basic_coin_amount / 3, -5) == round(float(stake_res_before["stringValue"]) / self.multiplier, -5))
 
         print("Try to send more money than bonding. Invalid tx expected")
         tx_hash_after_bond = self.tx_anna.transfer(
