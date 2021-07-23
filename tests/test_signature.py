@@ -2,7 +2,7 @@ import json
 import pytest
 from unittest.mock import Mock
 
-from hdacpy.transaction import Transaction
+from rizonpy.transaction import Transaction
 
 
 def test_sign():

@@ -6,9 +6,9 @@ from typing import Any, Dict, List
 import ecdsa
 import requests
 
-from hdacpy.exceptions import BadRequestException, EmptyMsgException, NotEnoughParametersException
-from hdacpy.type import SyncMode
-from hdacpy.wallet import privkey_to_address, privkey_to_pubkey, pubkey_to_address
+from rizonpy.exceptions import BadRequestException, EmptyMsgException, NotEnoughParametersException
+from rizonpy.type import SyncMode
+from rizonpy.wallet import privkey_to_address, privkey_to_pubkey, pubkey_to_address
 
 
 class Transaction:

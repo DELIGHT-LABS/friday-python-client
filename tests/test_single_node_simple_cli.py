@@ -2,9 +2,9 @@ import time
 import json
 import os
 
-from hdacpy.transaction import Transaction as Tx
-from hdacpy.wallet import mnemonic_to_privkey, mnemonic_to_address
-from hdacpy.exceptions import BadRequestException
+from rizonpy.transaction import Transaction as Tx
+from rizonpy.wallet import mnemonic_to_privkey, mnemonic_to_address
+from rizonpy.exceptions import BadRequestException
 
 import pytest
 

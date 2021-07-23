@@ -1,4 +1,4 @@
-import hdacpy.wallet as address
+import rizonpy.wallet as address
 
 test_vector = {
     'private_key': '700f97c741663c679b440b4c65d61a3119c46c45627a86b53f98c63faa8bfb24',

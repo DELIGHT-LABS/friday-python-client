@@ -3,8 +3,8 @@ import hashlib
 import bech32
 import ecdsa
 from mnemonic import Mnemonic
-from hdacpy.type import Wallet
-import hdacpy.bip39_bip44_process as bip_to_mnemonic
+from rizonpy.type import Wallet
+import rizonpy.bip39_bip44_process as bip_to_mnemonic
 
 PREFIX = "friday"
 KEYWORD_PUB = "pub"
