@@ -175,7 +175,7 @@ class TestSingleNode():
         print("======================Start test01_rest_transfer_to======================")
 
         print("Transfer token from elsa to anna")
-        res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount, self.transfer_fee)
+        res = self.tx_elsa.transfer(self.info_anna['address'], self.transfer_amount)
         print(res)
         
         print("Tx sent. Waiting for validation")

@@ -87,7 +87,7 @@ class Transaction:
                      }
                    }
                  ],
-                 "memo": ""
+                 "memo": self._memo
                },
                "mode": 'sync'
              }
@@ -113,7 +113,7 @@ class Transaction:
             "sequence": str(self._sequence),
             "fee":{ "amount": [ { "amount": '500', "denom": 'uatolo' } ], "gas": '200000' },
             "msgs": self._msgs,
-            "memo": "",
+            "memo": self._memo,
         }
 
     def _clear_msgs(self):
