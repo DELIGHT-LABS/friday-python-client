@@ -161,7 +161,7 @@ def add_genesis_account(address: str, token: int, stake: str, client_home: str =
     """
 
     client_home = os.path.join(os.environ["HOME"], client_home)
-    _ = _process_executor("rizond add-genesis-account {} {}urizon,{}stake --home {}", address, token, stake, client_home)
+    _ = _process_executor("rizond add-genesis-account {} {}uatolo,{}stake --home {}", address, token, stake, client_home)
 
 
 def cli_configs(chain_id: str, client_home: str = '.rizon'):
@@ -245,10 +245,7 @@ def query_contract(mode, address, path, client_home: str = ".rizon"):
 
 def is_tx_ok(tx_hash):
     res = query_tx(tx_hash)
-    is_success = res['logs'][0]['success']
-    if is_success == False or "ERROR" in res['raw_log']:
-        print(res['logs'])
-    return res['logs'][0]['success'] and "ERROR" not in res['raw_log']
+    return True if res['code'] == 0  else False
 
 
 ##################

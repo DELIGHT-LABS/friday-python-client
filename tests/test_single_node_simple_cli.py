@@ -31,21 +31,12 @@ class TestSingleNode():
 
     basic_stake = "10000000000"
     basic_coin = "10000000000"
+    basic_coin_amount = int(basic_coin)
 
-    multiplier = 10 ** 6
-
-    basic_coin_amount = int(int(basic_coin) / multiplier)
-
-    delegate_amount = 1
-    delegate_amount_bigsun = "1000000000000000000"
-    delegate_fee = 0.05
-
-    transfer_amount = 1
-    transfer_fee = 0.01
+    transfer_amount = 100000
+    transfer_fee = 100000
 
     tx_block_time = 2
-
-    small_fee = 0.00001
 
 
     def daemon_healthcheck(self):
@@ -164,7 +155,7 @@ class TestSingleNode():
         # {'balances': [{'denom': 'stake', 'amount': '0'}, {'denom': 'urizon', 'amount': '10000000000'}], 'pagination': {'next_key': None, 'total': '2'}}
         amount = None
         for coin in res['balances']:
-            if coin['denom'] == 'urizon':
+            if coin['denom'] == 'uatolo':
                 amount = coin['amount']
                 break
         assert(float(amount) / self.multiplier == self.basic_coin_amount) 
@@ -172,7 +163,7 @@ class TestSingleNode():
         res = self.tx_anna.get_balance(self.info_anna['address'])
         print("Output: ", res)
         for coin in res['balances']:
-            if coin['denom'] == 'urizon':
+            if coin['denom'] == 'uatolo':
                 amount = coin['amount']
                 break
         assert(float(amount) / self.multiplier == self.basic_coin_amount) 
@@ -196,10 +187,19 @@ class TestSingleNode():
 
         print("Balance checking after transfer..")
         res = self.tx_anna.get_balance(self.info_anna['address'])
-        assert(int(res["stringValue"]) / self.multiplier == self.basic_coin_amount + int(self.transfer_amount))
+        amount = None
+        for coin in res['balances']:
+            if coin['denom'] == 'uatolo':
+                amount = coin['amount']
+                break
+        assert(int(amount) == self.basic_coin_amount + int(self.transfer_amount))
 
         res = self.tx_elsa.get_balance(self.info_elsa['address'])
-        assert(int(res["stringValue"]) / self.multiplier <  self.basic_coin_amount - int(self.transfer_amount))
+        for coin in res['balances']:
+            if coin['denom'] == 'uatolo':
+                amount = coin['amount']
+                break
+        assert(int(amount) <  self.basic_coin_amount - int(self.transfer_amount))
 
         print("======================Done test01_rest_transfer_to======================")
 

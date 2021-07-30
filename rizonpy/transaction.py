@@ -22,7 +22,7 @@ class Transaction:
         memo: str = "",
         chain_id: str = "friday-devnet",
         gas_price: int = 100000000,
-        sync_mode: SyncMode = "sync",
+        sync_mode: SyncMode = 0,
     ) -> None:
         self._host = host
         self._privkey = privkey
@@ -74,26 +74,24 @@ class Transaction:
         base64_pubkey = base64.b64encode(bytes.fromhex(pubkey)).decode("utf-8")
         pushable_tx = {
             "tx": {
-                "msg": self._msgs,
-                "fee": {
-                    "gas": str(self._gas_price),
-                    "amount": [
-                        {
-                            "denom": "urizon",
-                            "amount": "500000"
-                        }
-                    ]
-                },
-                "memo": self._memo,
-                "signature": {
-                    "signature": self._sign(),
-                    "pub_key": {"type": "tendermint/PubKeySecp256k1", "value": base64_pubkey},
-                    "account_number": str(self._account_num),
-                    "sequence": str(self._sequence),
-                },
-            },
-            "mode": self._sync_mode,
-        }
+                 "msg": self._msgs,
+                 "fee": { "amount": [ { "amount": '500', "denom": 'uatolo' } ], "gas": '200000' },
+                 "signatures": [
+                   {
+                     "account_number": str(self._account_num),
+                     "sequence": str(self._sequence),
+                     "signature": self._sign(),
+                     "pub_key": {
+                       "type": 'tendermint/PubKeySecp256k1',
+                       "value": base64_pubkey
+                     }
+                   }
+                 ],
+                 "memo": ""
+               },
+               "mode": 'sync'
+             }
+        
         return pushable_tx
 
     def _sign(self) -> str:
@@ -112,10 +110,10 @@ class Transaction:
         return {
             "chain_id": self._chain_id,
             "account_number": str(self._account_num),
-            "fee": {"gas": str(self._gas_price), "amount": [],},
-            "memo": self._memo,
             "sequence": str(self._sequence),
+            "fee":{ "amount": [ { "amount": '500', "denom": 'uatolo' } ], "gas": '200000' },
             "msgs": self._msgs,
+            "memo": "",
         }
 
     def _clear_msgs(self):
@@ -123,7 +121,8 @@ class Transaction:
 
     def _send_tx(self):
         tx = self._get_pushable_tx()
-        url = "/".join([self._host, "cosmos/tx/v1beta1/txs"])
+        #url = "/".join([self._host, "cosmos/tx/v1beta1/txs"])
+        url = "/".join([self._host, "txs"])
         resp = self._post_json(url, json_param=tx)
         print(tx)
         print(resp.text)
@@ -186,28 +185,30 @@ class Transaction:
         self._get_account_info(sender_address)
 
         params = {
-            "type": "cosmos-sdk/StdTx",
-            "value": {
-                "msg": [
-                    {
-                        "type": "bank/Transfer",
-                        "value": {
-                            "from_address": sender_address,
-                            "to_address": recipient_address,
-                            "amount": str(int(amount * (10 ** 18))),
-                        }
+            "messages": [
+                #{
+                #    "@type": "/cosmos.bank.v1beta1.MsgSend",
+                #    "from_address": sender_address,
+                #    "to_address": recipient_address,
+                #    "amount": [
+                #        {
+                #            "amount": str(amount),
+                #            "denom": "uatolo"
+                #        }
+                #    ],
+                #}
+                {
+                    "type": 'cosmos-sdk/MsgSend',
+                    "value": {
+                      "amount": [ { "amount": str(amount), "denom": 'uatolo' } ],
+                      "from_address": sender_address,
+                      "to_address": recipient_address
                     }
-                ],
-                "fee": {
-                    "amount": [],
-                    "gas": "100000000"
-                },
-                "signatures": "",
-                "memo": memo
-            }
+                }
+            ],
         }
 
-        msgs = params.get("value").get("msg")
+        msgs = params.get("messages")
         
         self._msgs.extend(msgs)
 
