@@ -19,6 +19,12 @@ def generate_wallet() -> Wallet:
     return {"private_key": privkey, "public_key": pubkey, "address": address, "mnemonic": mnemonic}
 
 
+def recover_wallet(mnemonic: str) -> Wallet:
+    privkey, pubkey = bip_to_mnemonic.mnemonic_to_key(mnemonic)
+    address = pubkey_to_address(pubkey)
+    return {"private_key": privkey, "public_key": pubkey, "address": address, "mnemonic": mnemonic}
+
+
 def privkey_to_pubkey(privkey: str) -> str:
     privkey_obj = ecdsa.SigningKey.from_string(bytes.fromhex(privkey), curve=ecdsa.SECP256k1)
     pubkey_obj = privkey_obj.get_verifying_key()

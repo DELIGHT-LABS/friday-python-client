@@ -12,6 +12,10 @@ def test_mnemonic_to_privkey():
     assert address.mnemonic_to_privkey(test_vector["mnemonic"]) == test_vector['private_key']
 
 
+def test_recover_wallet():
+    assert address.recover_wallet(test_vector["mnemonic"]) == test_vector
+
+
 def test_mnemonic_to_pubkey():
     assert address.mnemonic_to_pubkey(test_vector["mnemonic"]) == test_vector['public_key']
 
