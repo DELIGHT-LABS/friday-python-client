@@ -21,7 +21,8 @@ class Transaction:
         privkey: str,
         memo: str = "",
         chain_id: str = "friday-devnet",
-        gas_price: int = 100000000,
+        gas: int = 60000,
+        fee: int = 600000,
         sync_mode: SyncMode = 0,
     ) -> None:
         self._host = host
@@ -31,7 +32,8 @@ class Transaction:
         self._memo = memo
         self._chain_id = chain_id
         self._sync_mode = sync_mode
-        self._gas_price = gas_price
+        self._gas = gas
+        self._fee = fee
         self._msgs: List[dict] = []
 
     def _get(self, url: str, params: dict) -> requests.Response:
@@ -46,6 +48,15 @@ class Transaction:
         resp = requests.put(url, json=json_param)
         return resp
 
+
+    def _set_gas_and_fee(self, gas, fee):
+        if gas is not None:
+            self._gas = gas
+        
+        if fee is not None:
+            self._fee = fee
+
+
     def _get_account_info(self, address):
         url = "/".join([self._host, "cosmos/auth/v1beta1/accounts", address])
         res = self._get(url, None)
@@ -54,6 +65,8 @@ class Transaction:
 
         resp = res.json()
         print(resp)
+
+        # Expected repsonse
         # {
         #     'account': {
         #         '@type': '/cosmos.auth.v1beta1.BaseAccount',
@@ -66,6 +79,7 @@ class Transaction:
         #         'sequence': '1'
         #     }
         # }
+
         self._account_num = int(resp["account"]["account_number"])
         self._sequence = int(resp["account"]["sequence"])
 
@@ -75,7 +89,7 @@ class Transaction:
         pushable_tx = {
             "tx": {
                  "msg": self._msgs,
-                 "fee": { "amount": [ { "amount": '500', "denom": 'uatolo' } ], "gas": '200000' },
+                 "fee": { "amount": [ { "amount": str(self._fee), "denom": 'uatolo' } ], "gas": str(self._gas) },
                  "signatures": [
                    {
                      "account_number": str(self._account_num),
@@ -111,7 +125,7 @@ class Transaction:
             "chain_id": self._chain_id,
             "account_number": str(self._account_num),
             "sequence": str(self._sequence),
-            "fee":{ "amount": [ { "amount": '500', "denom": 'uatolo' } ], "gas": '200000' },
+            "fee":{ "amount": [ { "amount": str(self._fee), "denom": 'uatolo' } ], "gas": str(self._gas) },
             "msgs": self._msgs,
             "memo": self._memo,
         }
@@ -177,7 +191,11 @@ class Transaction:
         amount: int,
         memo: str = "",
         batch_mode: bool = False,
+        gas=None,
+        fee=None,
     ):
+        self._set_gas_and_fee(gas, fee)
+
         sender_pubkey = privkey_to_pubkey(self._privkey)
         sender_address = pubkey_to_address(sender_pubkey)
 
@@ -222,9 +240,6 @@ class Transaction:
 
     def get_balance(self, address: str, blockHash: str = None):
         url = "/".join([self._host, "cosmos/bank/v1beta1/balances", address])
-        #print(blockHash, type(blockHash))
-        #if blockHash != None and blockHash != "":
-        #    params["block"] = blockHash
 
         resp = self._get(url, None)
         if resp.status_code != 200:
