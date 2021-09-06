@@ -204,17 +204,6 @@ class Transaction:
 
         params = {
             "messages": [
-                #{
-                #    "@type": "/cosmos.bank.v1beta1.MsgSend",
-                #    "from_address": sender_address,
-                #    "to_address": recipient_address,
-                #    "amount": [
-                #        {
-                #            "amount": str(amount),
-                #            "denom": "uatolo"
-                #        }
-                #    ],
-                #}
                 {
                     "type": 'cosmos-sdk/MsgSend',
                     "value": {
@@ -231,10 +220,8 @@ class Transaction:
         self._msgs.extend(msgs)
 
         if batch_mode == False:
-            # 1 tx 1 msg
             return self._send_tx()
-        # else:
-            # just extend msgs and send via batchSendTx later
+
 
     ## Query
 
