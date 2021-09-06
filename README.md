@@ -1,19 +1,11 @@
 # rizonpy
 
-Tools for Hdac wallet management and offline transaction signing  
+Tools for RIZON wallet management and offline transaction signing  
 Forked from hukkinj1/cosmospy
 
 <!--- Don't edit the version line below manually. Let bump2version do it for you. -->
 > Version 0.5.6
-> Tools for Hdac wallet management and offline transaction signing
-
-## Version matching
-
-| [Rizon](https://github.com/rizon-world/rizon) | `rizon` |
-|------|----------|
-| <= 0.9.0 | 0.5.0 |
-| <= 0.4.0 | 0.3.3 |
-| 0.5.0 | 0.4.0 |
+> Tools for RIZON wallet management and offline transaction signing
 
 ## Installing
 
@@ -66,8 +58,11 @@ tx.transfer(
         token_contract_address="rizon1lgharzgds89lpshr7q8kcmd2esnxkfpwmfgk32",
         sender_address="rizon1lgharzgds89lpshr7q8kcmd2esnxkfpwmfgk32",
         recipient_address="rizon1z47ev5u5ujmc7kwv49tut7raesg55tjyk2wvhd",
-        amount=amount, gas_price=2000000, fee=10000
+        amount=amount, gas=2000000, fee=10000
     )
 ```
 
-`transfer()` executes `POST` to organize tx, and `send_tx()` signs & broadcast the tx.
+`transfer()` executes `POST` to organize tx
+
+* If you send with `batch_mode=True`, this library does not send immediatly. It gathers more txs into the internal array, and send altogether when the user calls `batchSendTx`
+* If `batch_mode=False`, it sends each call immediatly
